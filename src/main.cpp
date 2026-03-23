@@ -34,12 +34,32 @@ int main(){
     int s1 = init_can(CAN_INTERFACE_0);
     if (s1 < 0) return -1;
 
+
+    for(auto &i : LeftArm) {
+        std::visit([&](auto& motor) {
+            motor.enable_motor();
+        }, i);
+        usleep(10000); // 10ms delay
+        std::visit([&](auto& motor) {
+            motor.set_mode_raw(0);
+        }, i);
+        usleep(10000); // 10ms delay
+        std::visit([&](auto& motor) {
+            motor.write_limit(PARAM_VELOCITY_LIMIT, 5);
+        }, i);
+        usleep(10000); // 10ms delay
+        std::visit([&](auto& motor) {
+            motor.write_limit(PARAM_TORQUE_LIMIT, 5);
+        }, i);
+        usleep(10000); // 10ms delay
+    };                                        // TODO: init 함수로 모드설정, 리밋 거는일 한번에 할 수 있도록 
+
     
 
     while(running){
         for(auto &i : LeftArm) {
             std::visit([&](auto& motor) {
-                motor.write_operation_frame(1, motor.control_param.pos, motor.control_param.Kp, motor.control_param.Kd);
+                motor.write_operation_frame(motor.control_param.pos, motor.control_param.Kp, motor.control_param.Kd);
             }, i);
 
         };  

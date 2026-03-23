@@ -1,0 +1,8 @@
+# Build
+Areum2_can
+*.o
+
+# Editor & OS
+.vscode/
+.DS_Store
+*.swp

@@ -53,7 +53,7 @@ class RobstrideMotor {
     Control_param control_param;
 
 
-    RobstrideMotor(RobstrideMotor_type Motor_type, int can_interface,int can_id ): 
+    RobstrideMotor(int can_interface,int can_id ): 
         can_interface(can_interface) ,can_id(can_id) {
     
     }

@@ -12,6 +12,7 @@ OBJS = $(SRCS:.cpp=.o)
 
 # Default target
 all: $(TARGET)
+	@chmod +x start.sh  
 
 # Link the executable
 $(TARGET): $(OBJS)

@@ -14,3 +14,18 @@ int init_can(const char* interface) {
     if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -1;
     return s;
 }
+
+bool readframe(int s, struct can_frame* frame){
+    
+    ssize_t nbytes = read(s, frame, sizeof(struct can_frame));
+    if (nbytes < 0) {
+        const int err = errno;
+        if ( err == EAGAIN || err == EWOULDBLOCK){
+            return false; // 지금은 데이터 없음 (즉시 리턴)
+        }else{
+            perror("read"); // 진짜 에러
+            return false;
+        }
+    }
+    return nbytes == sizeof(struct can_frame);
+}

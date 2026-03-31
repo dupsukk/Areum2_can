@@ -1,15 +1,17 @@
-#ifndef ROBSTRIDEMOTOR_H
-#define ROBSTRIDEMOTOR_H
+#ifndef ROBSTRIDEMOTOR_HPP
+#define ROBSTRIDEMOTOR_HPP
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string>
 #include <cstring>
-#include <atomic>
+#include <atomic>  // not using at this moment 
 #include <stdio.h>
 #include <unistd.h>
 #include <cmath>
 #include <variant>
+#include <tuple>
+#include <vector>
 
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -28,8 +30,87 @@ const uint32_t COMM_OPERATION_CONTROL = 1;
 const uint16_t PARAM_VELOCITY_LIMIT = 0x7017;
 const uint16_t PARAM_TORQUE_LIMIT = 0x700B;           
 
+enum class RobstrideMotor_type {RS00 = 0, RS01 =1 , RS02 =2 , RS03 = 3, RS04= 4, RS05 =5, RS06=6, EL05 = 7};
 
-typedef enum RobstrideMotor_type {RS00 = 0, RS01 =1 , RS02 =2 , RS03 = 3, RS04= 4, RS05 =5, RS06=6, EL05 = 7};
+template <RobstrideMotor_type T> struct MotorConstants{
+    static constexpr double POS_SCALE = 4 * M_PI;
+    static constexpr double VEL_SCALE = 50.0;
+    static constexpr double KP_SCALE = 500.0;
+    static constexpr double KD_SCALE = 5.0;
+    static constexpr double TQ_SCALE = 17.0;
+};
+
+template <> struct MotorConstants<RobstrideMotor_type::RS00>
+{
+    static constexpr double POS_SCALE = 4 * M_PI; // rs-00
+    static constexpr double VEL_SCALE = 50.0;     // rs-00
+    static constexpr double KP_SCALE = 500.0;    // rs-00
+    static constexpr double KD_SCALE = 5.0;     // rs-00
+    static constexpr double TQ_SCALE = 17.0;      // rs-00
+};
+
+template <> struct MotorConstants<RobstrideMotor_type::RS01>
+{
+    static constexpr double POS_SCALE = 4 * M_PI; // rs-01
+    static constexpr double VEL_SCALE = 44.0;     // rs-01
+    static constexpr double KP_SCALE = 500.0;    // rs-01
+    static constexpr double KD_SCALE = 5.0;     // rs-01
+    static constexpr double TQ_SCALE = 17.0;      // rs-01
+};
+
+template <> struct MotorConstants<RobstrideMotor_type::RS02>
+{
+    static constexpr double POS_SCALE = 4 * M_PI; // rs-02
+    static constexpr double VEL_SCALE = 44.0;     // rs-02
+    static constexpr double KP_SCALE = 500.0;    // rs-02
+    static constexpr double KD_SCALE = 5.0;     // rs-02
+    static constexpr double TQ_SCALE = 17.0;      // rs-02    /* data */
+};
+
+template <> struct MotorConstants<RobstrideMotor_type::RS03>
+{
+    static constexpr double POS_SCALE = 4 * M_PI; // rs-03
+    static constexpr double VEL_SCALE = 50.0;     // rs-03
+    static constexpr double KP_SCALE = 5000.0;    // rs-03
+    static constexpr double KD_SCALE = 100.0;     // rs-03
+    static constexpr double TQ_SCALE = 60.0;      // rs-03    /* data */
+};
+
+template <> struct MotorConstants<RobstrideMotor_type::RS04>
+{
+    static constexpr double POS_SCALE = 4 * M_PI; // rs-04
+    static constexpr double VEL_SCALE = 15.0;     // rs-04
+    static constexpr double KP_SCALE = 5000.0;    // rs-04
+    static constexpr double KD_SCALE = 100.0;     // rs-04
+    static constexpr double TQ_SCALE = 120.0;      // rs-04   /* data */
+};
+
+template <> struct MotorConstants<RobstrideMotor_type::RS05>
+{
+    static constexpr double POS_SCALE = 4 * M_PI; // rs-05
+    static constexpr double VEL_SCALE = 33.0;     // rs-05
+    static constexpr double KP_SCALE = 500.0;    // rs-05
+    static constexpr double KD_SCALE = 5.0;     // rs-05
+    static constexpr double TQ_SCALE = 17.0;      // rs-05    /* data */
+};
+
+template <> struct MotorConstants<RobstrideMotor_type::RS06>
+{
+    static constexpr double POS_SCALE = 4 * M_PI; // rs-06
+    static constexpr double VEL_SCALE = 20.0;     // rs-06
+    static constexpr double KP_SCALE = 5000.0;    // rs-06
+    static constexpr double KD_SCALE = 100.0;     // rs-06
+    static constexpr double TQ_SCALE = 60.0;      // rs-06    /* data */
+};
+
+template <> struct MotorConstants<RobstrideMotor_type::EL05>  //EL05 데이터 확인 필요 
+{
+    static constexpr double POS_SCALE = 4 * M_PI; 
+    static constexpr double VEL_SCALE = 20.0;     
+    static constexpr double KP_SCALE = 500.0;    
+    static constexpr double KD_SCALE = 5.0;     
+    static constexpr double TQ_SCALE = 17.0;         
+};
 
 typedef struct 
 {
@@ -39,6 +120,13 @@ typedef struct
     uint16_t Kd;
     uint16_t ffTorque;
 }Control_param;
+
+typedef struct{          // TODO : 프로토콜에 맞춰서 피드백 데이터 넣기 아이디 확인해서 여기에 채워넣는거라 모터 말고 다른 클래스를 만드는게 좋음 
+    uint16_t pos; 
+    uint16_t vel;
+    uint16_t torque;
+    uint16_t temp;
+}Feedback_param;
 
 
 template <RobstrideMotor_type Motor_type>
@@ -99,7 +187,7 @@ class RobstrideMotor {
     /**
      * @brief Read a CAN frame (with timeout)
      */
-    bool read_frame(int s, struct can_frame* frame) {
+    bool read_frame(int s, struct can_frame* frame) {             
         // Set 100ms timeout
         struct timeval tv;
         tv.tv_sec = 0;
@@ -147,261 +235,32 @@ class RobstrideMotor {
         return send_frame(ext_id, data, 8);
     }
     
-    bool write_operation_frame(double pos, double kp_val, double kd_val) {
+    bool write_operation_frame(double pos, double kp_val, double kd_val) {                     // TODO : 속도명령 넣을수 있도록. 또한 피드포워드 토크도 넣을 수 있도록. 
         // 1. Pack data (big-endian!)
-        // These scaling values should be imported from table.py; hardcoded here for simplicity
-                                                            //테이블에 있는거 가져오긴 했는데 이상하게 훨씬 약한 모터인데 17Nm를 스케일로 쓴다고?? 이상하네;; 
-        if constexpr(Motor_type==RS00){
-            const double POS_SCALE = 4 * M_PI; // rs-00
-            const double VEL_SCALE = 50.0;     // rs-00
-            const double KP_SCALE = 500.0;    // rs-00
-            const double KD_SCALE = 5.0;     // rs-00
-            const double TQ_SCALE = 17.0;      // rs-00
 
                     // Clamp and convert
-            double pos_clamped = std::max(-POS_SCALE, std::min(POS_SCALE, pos));
-            double kp_clamped = std::max(0.0, std::min(KP_SCALE, kp_val));
-            double kd_clamped = std::max(0.0, std::min(KD_SCALE, kd_val));                // std::clamp로 바꾸고 싶다 그죠? 
+        double pos_clamped = std::max(-MotorConstants<Motor_type>::POS_SCALE, std::min(MotorConstants<Motor_type>::POS_SCALE, pos));
+        double kp_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KP_SCALE, kp_val));
+        double kd_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KD_SCALE, kd_val));                // std::clamp로 바꾸고 싶다 그죠? 
         
-            uint16_t pos_u16 = (uint16_t)(((pos_clamped / POS_SCALE) + 1.0) * 0x7FFF);
-            uint16_t vel_u16 = 0x7FFF; // 0 velocity
-            uint16_t kp_u16 = (uint16_t)((kp_clamped / KP_SCALE) * 0xFFFF);
-            uint16_t kd_u16 = (uint16_t)((kd_clamped / KD_SCALE) * 0xFFFF);
-            uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
+        uint16_t pos_u16 = (uint16_t)(((pos_clamped / MotorConstants<Motor_type>::POS_SCALE) + 1.0) * 0x7FFF);
+        uint16_t vel_u16 = 0x7FFF; // 0 velocity
+        uint16_t kp_u16 = (uint16_t)((kp_clamped / MotorConstants<Motor_type>::KP_SCALE) * 0xFFFF);
+        uint16_t kd_u16 = (uint16_t)((kd_clamped / MotorConstants<Motor_type>::KD_SCALE) * 0xFFFF);
+        uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
     
-            uint8_t data[8];
-            pack_u16_be(&data[0], pos_u16);
-            pack_u16_be(&data[2], vel_u16);
-            pack_u16_be(&data[4], kp_u16);
-            pack_u16_be(&data[6], kd_u16);
+        uint8_t data[8];
+        pack_u16_be(&data[0], pos_u16);
+        pack_u16_be(&data[2], vel_u16);
+        pack_u16_be(&data[4], kp_u16);
+        pack_u16_be(&data[6], kd_u16);
         
             // 2. Construct CAN ID
             //uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | (torque_u16 << 8) | motor_id;      
-            uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
+        uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
         
-        // 3. Send
+            // 3. Send
         return send_frame(ext_id, data, 8);
-        }
-        else if constexpr(Motor_type==RS01){
-            const double POS_SCALE = 4 * M_PI; // rs-01
-            const double VEL_SCALE = 44.0;     // rs-01
-            const double KP_SCALE = 500.0;    // rs-01
-            const double KD_SCALE = 5.0;     // rs-01
-            const double TQ_SCALE = 17.0;      // rs-01
-
-                    // Clamp and convert
-            double pos_clamped = std::max(-POS_SCALE, std::min(POS_SCALE, pos));
-            double kp_clamped = std::max(0.0, std::min(KP_SCALE, kp_val));
-            double kd_clamped = std::max(0.0, std::min(KD_SCALE, kd_val));                // std::clamp로 바꾸고 싶다 그죠? 
-            
-            uint16_t pos_u16 = (uint16_t)(((pos_clamped / POS_SCALE) + 1.0) * 0x7FFF);
-            uint16_t vel_u16 = 0x7FFF; // 0 velocity
-            uint16_t kp_u16 = (uint16_t)((kp_clamped / KP_SCALE) * 0xFFFF);
-            uint16_t kd_u16 = (uint16_t)((kd_clamped / KD_SCALE) * 0xFFFF);
-            uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
-    
-            uint8_t data[8];
-            pack_u16_be(&data[0], pos_u16);
-            pack_u16_be(&data[2], vel_u16);
-            pack_u16_be(&data[4], kp_u16);
-            pack_u16_be(&data[6], kd_u16);
-        
-            // 2. Construct CAN ID
-           //uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | (torque_u16 << 8) | motor_id;      
-            uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
-        
-            // 3. Send
-          return send_frame(ext_id, data, 8);
-        }
-        else if constexpr(Motor_type==RS02){
-            const double POS_SCALE = 4 * M_PI; // rs-02
-            const double VEL_SCALE = 44.0;     // rs-02
-            const double KP_SCALE = 500.0;    // rs-02
-            const double KD_SCALE = 5.0;     // rs-02
-            const double TQ_SCALE = 17.0;      // rs-02
-
-                    // Clamp and convert
-            double pos_clamped = std::max(-POS_SCALE, std::min(POS_SCALE, pos));
-            double kp_clamped = std::max(0.0, std::min(KP_SCALE, kp_val));
-            double kd_clamped = std::max(0.0, std::min(KD_SCALE, kd_val));                // std::clamp로 바꾸고 싶다 그죠? 
-        
-            uint16_t pos_u16 = (uint16_t)(((pos_clamped / POS_SCALE) + 1.0) * 0x7FFF);
-            uint16_t vel_u16 = 0x7FFF; // 0 velocity
-            uint16_t kp_u16 = (uint16_t)((kp_clamped / KP_SCALE) * 0xFFFF);
-            uint16_t kd_u16 = (uint16_t)((kd_clamped / KD_SCALE) * 0xFFFF);
-            uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
-    
-            uint8_t data[8];
-            pack_u16_be(&data[0], pos_u16);
-            pack_u16_be(&data[2], vel_u16);
-            pack_u16_be(&data[4], kp_u16);
-            pack_u16_be(&data[6], kd_u16);
-        
-            // 2. Construct CAN ID
-            //uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | (torque_u16 << 8) | motor_id;      
-            uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
-        
-            // 3. Send
-            return send_frame(ext_id, data, 8);
-        }
-        else if constexpr(Motor_type==RS03){
-            const double POS_SCALE = 4 * M_PI; // rs-03
-            const double VEL_SCALE = 50.0;     // rs-03
-            const double KP_SCALE = 5000.0;    // rs-03
-            const double KD_SCALE = 100.0;     // rs-03
-            const double TQ_SCALE = 60.0;      // rs-03
-
-                    // Clamp and convert
-            double pos_clamped = std::max(-POS_SCALE, std::min(POS_SCALE, pos));
-            double kp_clamped = std::max(0.0, std::min(KP_SCALE, kp_val));
-            double kd_clamped = std::max(0.0, std::min(KD_SCALE, kd_val));                // std::clamp로 바꾸고 싶다 그죠? 
-        
-            uint16_t pos_u16 = (uint16_t)(((pos_clamped / POS_SCALE) + 1.0) * 0x7FFF);
-            uint16_t vel_u16 = 0x7FFF; // 0 velocity
-            uint16_t kp_u16 = (uint16_t)((kp_clamped / KP_SCALE) * 0xFFFF);
-            uint16_t kd_u16 = (uint16_t)((kd_clamped / KD_SCALE) * 0xFFFF);
-            uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
-    
-            uint8_t data[8];
-            pack_u16_be(&data[0], pos_u16);
-            pack_u16_be(&data[2], vel_u16);
-            pack_u16_be(&data[4], kp_u16);
-            pack_u16_be(&data[6], kd_u16);
-        
-            // 2. Construct CAN ID
-            //uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | (torque_u16 << 8) | motor_id;      
-            uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
-        
-            // 3. Send
-            return send_frame(ext_id, data, 8);
-        }
-        else if constexpr(Motor_type==RS04){
-            const double POS_SCALE = 4 * M_PI; // rs-04
-            const double VEL_SCALE = 15.0;     // rs-04
-            const double KP_SCALE = 5000.0;    // rs-04
-            const double KD_SCALE = 100.0;     // rs-04
-            const double TQ_SCALE = 120.0;      // rs-04
-
-                    // Clamp and convert
-            double pos_clamped = std::max(-POS_SCALE, std::min(POS_SCALE, pos));
-            double kp_clamped = std::max(0.0, std::min(KP_SCALE, kp_val));
-            double kd_clamped = std::max(0.0, std::min(KD_SCALE, kd_val));                // std::clamp로 바꾸고 싶다 그죠? 
-        
-            uint16_t pos_u16 = (uint16_t)(((pos_clamped / POS_SCALE) + 1.0) * 0x7FFF);
-            uint16_t vel_u16 = 0x7FFF; // 0 velocity
-            uint16_t kp_u16 = (uint16_t)((kp_clamped / KP_SCALE) * 0xFFFF);
-            uint16_t kd_u16 = (uint16_t)((kd_clamped / KD_SCALE) * 0xFFFF);
-            uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
-    
-            uint8_t data[8];
-            pack_u16_be(&data[0], pos_u16);
-            pack_u16_be(&data[2], vel_u16);
-            pack_u16_be(&data[4], kp_u16);
-            pack_u16_be(&data[6], kd_u16);
-        
-            // 2. Construct CAN ID
-            //uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | (torque_u16 << 8) | motor_id;      
-            uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
-        
-        // 3. Send
-            return send_frame(ext_id, data, 8);
-        }
-        else if constexpr(Motor_type==RS05){
-            const double POS_SCALE = 4 * M_PI; // rs-05
-            const double VEL_SCALE = 33.0;     // rs-05
-            const double KP_SCALE = 500.0;    // rs-05
-            const double KD_SCALE = 5.0;     // rs-05
-            const double TQ_SCALE = 17.0;      // rs-05
-
-                    // Clamp and convert
-            double pos_clamped = std::max(-POS_SCALE, std::min(POS_SCALE, pos));
-            double kp_clamped = std::max(0.0, std::min(KP_SCALE, kp_val));
-            double kd_clamped = std::max(0.0, std::min(KD_SCALE, kd_val));                // std::clamp로 바꾸고 싶다 그죠? 
-        
-            uint16_t pos_u16 = (uint16_t)(((pos_clamped / POS_SCALE) + 1.0) * 0x7FFF);
-            uint16_t vel_u16 = 0x7FFF; // 0 velocity
-            uint16_t kp_u16 = (uint16_t)((kp_clamped / KP_SCALE) * 0xFFFF);
-            uint16_t kd_u16 = (uint16_t)((kd_clamped / KD_SCALE) * 0xFFFF);
-            uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
-    
-            uint8_t data[8];
-            pack_u16_be(&data[0], pos_u16);
-            pack_u16_be(&data[2], vel_u16);
-            pack_u16_be(&data[4], kp_u16);
-            pack_u16_be(&data[6], kd_u16);
-        
-            // 2. Construct CAN ID
-            //uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | (torque_u16 << 8) | motor_id;      
-            uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
-        
-            // 3. Send
-            return send_frame(ext_id, data, 8);
-        }
-        else if constexpr(Motor_type==RS06){
-            const double POS_SCALE = 4 * M_PI; // rs-06
-            const double VEL_SCALE = 20.0;     // rs-06
-            const double KP_SCALE = 5000.0;    // rs-06
-            const double KD_SCALE = 5.0;     // rs-06
-            const double TQ_SCALE = 60.0;      // rs-06
-
-                    // Clamp and convert
-            double pos_clamped = std::max(-POS_SCALE, std::min(POS_SCALE, pos));
-            double kp_clamped = std::max(0.0, std::min(KP_SCALE, kp_val));
-            double kd_clamped = std::max(0.0, std::min(KD_SCALE, kd_val));                // std::clamp로 바꾸고 싶다 그죠? 
-        
-            uint16_t pos_u16 = (uint16_t)(((pos_clamped / POS_SCALE) + 1.0) * 0x7FFF);
-            uint16_t vel_u16 = 0x7FFF; // 0 velocity
-            uint16_t kp_u16 = (uint16_t)((kp_clamped / KP_SCALE) * 0xFFFF);
-            uint16_t kd_u16 = (uint16_t)((kd_clamped / KD_SCALE) * 0xFFFF);
-            uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
-    
-            uint8_t data[8];
-            pack_u16_be(&data[0], pos_u16);
-            pack_u16_be(&data[2], vel_u16);
-            pack_u16_be(&data[4], kp_u16);
-            pack_u16_be(&data[6], kd_u16);
-        
-            // 2. Construct CAN ID
-            //uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | (torque_u16 << 8) | motor_id;      
-            uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
-        
-        // 3. Send
-            return send_frame(ext_id, data, 8);
-        }        
-        else if constexpr(Motor_type==EL05){
-            const double POS_SCALE = 4 * M_PI; // rs-05
-            const double VEL_SCALE = 33.0;     // rs-05
-            const double KP_SCALE = 500.0;    // rs-05
-            const double KD_SCALE = 5.0;     // rs-05
-            const double TQ_SCALE = 17.0;      // rs-05
-
-                    // Clamp and convert
-            double pos_clamped = std::max(-POS_SCALE, std::min(POS_SCALE, pos));
-            double kp_clamped = std::max(0.0, std::min(KP_SCALE, kp_val));
-            double kd_clamped = std::max(0.0, std::min(KD_SCALE, kd_val));                // std::clamp로 바꾸고 싶다 그죠? 
-        
-            uint16_t pos_u16 = (uint16_t)(((pos_clamped / POS_SCALE) + 1.0) * 0x7FFF);
-            uint16_t vel_u16 = 0x7FFF; // 0 velocity
-            uint16_t kp_u16 = (uint16_t)((kp_clamped / KP_SCALE) * 0xFFFF);
-            uint16_t kd_u16 = (uint16_t)((kd_clamped / KD_SCALE) * 0xFFFF);
-            uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
-    
-            uint8_t data[8];
-            pack_u16_be(&data[0], pos_u16);
-            pack_u16_be(&data[2], vel_u16);
-            pack_u16_be(&data[4], kp_u16);
-            pack_u16_be(&data[6], kd_u16);
-        
-            // 2. Construct CAN ID
-            //uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | (torque_u16 << 8) | motor_id;      
-            uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
-        
-            // 3. Send
-            return send_frame(ext_id, data, 8);
-        }
-
-
-        return false;
     
     }
 
@@ -418,14 +277,39 @@ class RobstrideMotor {
         return false;
     }
     
-    
+    bool init_motor_MIT(float vel_lim, float torque_lim){
+        try{
+            enable_motor();
+            usleep(1000);
+            set_mode_raw(0);
+            usleep(1000);
+            write_limit(PARAM_VELOCITY_LIMIT, vel_lim);
+            usleep(1000);
+            write_limit(PARAM_TORQUE_LIMIT, torque_lim);
+
+            return true;
+        }catch(const std::exception& e){
+
+            // 모터를 끄는 로직이 들어갑시다 
+            return false;
+        }
+
+    }
 
 };
 
 
+using Motortype = std::variant<RobstrideMotor<RobstrideMotor_type::RS00> , RobstrideMotor<RobstrideMotor_type::RS01>,RobstrideMotor<RobstrideMotor_type::RS02> ,RobstrideMotor<RobstrideMotor_type::RS03> ,RobstrideMotor<RobstrideMotor_type::RS04> ,RobstrideMotor<RobstrideMotor_type::RS05>,RobstrideMotor<RobstrideMotor_type::RS06>,RobstrideMotor<RobstrideMotor_type::EL05>>;
+ // 
+using Motor_con = std::tuple<std::vector<RobstrideMotor<RobstrideMotor_type::RS00>>, std::vector<RobstrideMotor<RobstrideMotor_type::RS01>>,
+std::vector<RobstrideMotor<RobstrideMotor_type::RS02>> ,std::vector<RobstrideMotor<RobstrideMotor_type::RS03>>
+ ,std::vector<RobstrideMotor<RobstrideMotor_type::RS04>> ,std::vector<RobstrideMotor<RobstrideMotor_type::RS05>>,
+ std::vector<RobstrideMotor<RobstrideMotor_type::RS06>>,std::vector<RobstrideMotor<RobstrideMotor_type::EL05>>>;
+
 int init_can(const char* interface) ;
 
-using Motortype = std::variant<RobstrideMotor<RS00> , RobstrideMotor<RS01>,RobstrideMotor<RS02> ,RobstrideMotor<RS03> ,RobstrideMotor<RS04> ,RobstrideMotor<RS05>,RobstrideMotor<RS06>,RobstrideMotor<EL05>>;
+bool readframe(int s, struct can_frame* frame);  // 이 이름으로 프레임 데이터 읽는 함수 작성 
+                                                //아마 읽어오는 클래스를 하나 만드는게 좋을듯
 
 
 

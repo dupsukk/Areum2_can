@@ -6,3 +6,6 @@ Areum2_can
 .vscode/
 .DS_Store
 *.swp
+
+#log files 
+.log

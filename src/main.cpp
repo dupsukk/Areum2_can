@@ -1,6 +1,8 @@
 #include "RobstrideMotor.hpp"
+#include "Rx_handler.hpp"
 #include <signal.h>
 #include <vector>
+#include <iostream>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -13,7 +15,7 @@ const char* CAN_INTERFACE_1 = "can1";
 
 bool running = true; 
 
-
+Motor_con Left_Leg ;
 
 
 void signal_handler(int signum) { running = false; }
@@ -25,29 +27,22 @@ int main(){
     int s1 = init_can(CAN_INTERFACE_0);
     if (s1 < 0) return -1;
 
-    LeftArm.push_back(RobstrideMotor<RobstrideMotor_type::RS02>(s1 ,CAN_ID_LEFT_SHOULDER_PITCH));  // 이런 방식으로 확장쓰~ 
     can_frame cf;
 
+    std::get<RS04_Vec>(Left_Leg).emplace_back(s1,0x01);
+    std::get<RS03_Vec>(Left_Leg).emplace_back(s1,0x02);
+    std::get<RS03_Vec>(Left_Leg).emplace_back(s1,0x03);
+    std::get<RS04_Vec>(Left_Leg).emplace_back(s1,0x04);
+    std::get<RS06_Vec>(Left_Leg).emplace_back(s1,0x05);
+    std::get<RS06_Vec>(Left_Leg).emplace_back(s1,0x06);
 
-    for(auto &i : LeftArm) {
-        std::visit([&](auto& motor) {
-            motor.enable_motor();
-        }, i);
-        usleep(10000); // 10ms delay
-        std::visit([&](auto& motor) {
-            motor.set_mode_raw(0);
-        }, i);
-        usleep(10000); // 10ms delay
-        std::visit([&](auto& motor) {
-            motor.write_limit(PARAM_VELOCITY_LIMIT, 5);
-        }, i);
-        usleep(10000); // 10ms delay
-        std::visit([&](auto& motor) {
-            motor.write_limit(PARAM_TORQUE_LIMIT, 5);
-        }, i);
-        usleep(10000); // 10ms delay
-    };                                        // TODO: init 함수로 모드설정, 리밋 거는일 한번에 할 수 있도록 
-                                            // init_motor_MIT 라는 함수로 구현함요 
+    std::apply([](auto&... vecs) {
+        (..., [](auto& vec) {
+            for (auto& motor : vec) motor.init_motor_MIT(1,1);
+        }(vecs));
+    }, Left_Leg);
+
+    Rx_handler hRx(Left_Leg) ;
 
     
 
@@ -55,8 +50,10 @@ int main(){
 
         //여기서는 뭐 읽어오기! 
         for(auto i : LeftArm){
-            readframe(s1, &cf);
-                                         // 여기에다 
+            if(readframe(s1, &cf)) {
+                auto [id, err,pos,vel,torq,temp] = hRx.parse_Rx_frame(&cf);
+                std::cout << "id : " <<id <<"  err :" << (err==0) <<"  pos : " <<pos << "  vel : " <<vel << "  torque : " <<torq;
+            }
         }
 
         for(auto &i : LeftArm) {
@@ -65,7 +62,6 @@ int main(){
             }, i);
 
         };  
-
     }
 
 

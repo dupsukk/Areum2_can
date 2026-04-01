@@ -122,27 +122,29 @@ typedef struct
 }Control_param;
 
 typedef struct{          // TODO : 프로토콜에 맞춰서 피드백 데이터 넣기 아이디 확인해서 여기에 채워넣는거라 모터 말고 다른 클래스를 만드는게 좋음 
-    uint16_t pos; 
-    uint16_t vel;
-    uint16_t torque;
-    uint16_t temp;
-}Feedback_param;
+    float pos; 
+    float vel;
+    float torque;
+    float temp;
+}Feedback_Param;
 
 
 template <RobstrideMotor_type Motor_type>
 class RobstrideMotor {
     private :
     //const RobstrideMotor_type Motor_type;
-    const int can_id;
     const int can_interface;
 
 
     public:
+    const int can_id;
     Control_param control_param;
+    Feedback_Param Feedback_param;
 
 
     RobstrideMotor(int can_interface,int can_id ): 
         can_interface(can_interface) ,can_id(can_id) {
+            Feedback_param ={0};
     
     }
     
@@ -296,6 +298,15 @@ class RobstrideMotor {
 
     }
 
+
+    void write_FB(float pos, float vel , float torq_raw , float temp){
+        Feedback_param.pos = pos*MotorConstants<Motor_type>::POS_SCALE;
+        Feedback_param.vel = vel*MotorConstants<Motor_type>::VEL_SCALE;
+        Feedback_param.torque = torq_raw*MotorConstants<Motor_type>::TQ_SCALE;
+        Feedback_param.temp = temp;
+    }
+
+
 };
 
 
@@ -305,6 +316,17 @@ using Motor_con = std::tuple<std::vector<RobstrideMotor<RobstrideMotor_type::RS0
 std::vector<RobstrideMotor<RobstrideMotor_type::RS02>> ,std::vector<RobstrideMotor<RobstrideMotor_type::RS03>>
  ,std::vector<RobstrideMotor<RobstrideMotor_type::RS04>> ,std::vector<RobstrideMotor<RobstrideMotor_type::RS05>>,
  std::vector<RobstrideMotor<RobstrideMotor_type::RS06>>,std::vector<RobstrideMotor<RobstrideMotor_type::EL05>>>;
+
+ 
+ using RS00_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS00>>; 
+ using RS01_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS01>>; 
+ using RS02_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS02>>; 
+ using RS03_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS03>>; 
+ using RS04_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS04>>; 
+ using RS05_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS05>>; 
+ using RS06_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS06>>; 
+ using EL05_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::EL05>>; 
+
 
 int init_can(const char* interface) ;
 

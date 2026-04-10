@@ -8,17 +8,16 @@
 #include <sys/mman.h>
 
 
-std::vector<Motortype> LeftArm;
-
 const char* CAN_INTERFACE_0 = "can0";
 const char* CAN_INTERFACE_1 = "can1";
-
 bool running = true; 
+constexpr long CONTROL_PERIOD = 2000000;
 
 Motor_con Left_Leg ;
 
 
 void signal_handler(int signum) { running = false; }
+RealTimeClock RTC;
 
 int main(){
 
@@ -29,12 +28,13 @@ int main(){
 
     can_frame cf;
 
-    std::get<RS04_Vec>(Left_Leg).emplace_back(s1,0x01);
-    std::get<RS03_Vec>(Left_Leg).emplace_back(s1,0x02);
-    std::get<RS03_Vec>(Left_Leg).emplace_back(s1,0x03);
-    std::get<RS04_Vec>(Left_Leg).emplace_back(s1,0x04);
-    std::get<RS06_Vec>(Left_Leg).emplace_back(s1,0x05);
-    std::get<RS06_Vec>(Left_Leg).emplace_back(s1,0x06);
+    //std::get<RS04_Vec>(Left_Leg).emplace_back(s1,0x01);
+    //std::get<RS03_Vec>(Left_Leg).emplace_back(s1,0x02);
+    //std::get<RS03_Vec>(Left_Leg).emplace_back(s1,0x03);
+    //std::get<RS04_Vec>(Left_Leg).emplace_back(s1,0x04);
+    //std::get<RS06_Vec>(Left_Leg).emplace_back(s1,0x05);
+    //std::get<RS06_Vec>(Left_Leg).emplace_back(s1,0x06);
+    std::get<EL05_Vec>(Left_Leg).emplace_back(s1,0x01);
 
     std::apply([](auto&... vecs) {
         (..., [](auto& vec) {
@@ -44,24 +44,29 @@ int main(){
 
     Rx_handler hRx(Left_Leg) ;
 
-    
+    sleep(5);
+    RTC.reset();
 
     while(running){
+        RTC.wait_next(CONTROL_PERIOD);
 
-        //여기서는 뭐 읽어오기! 
-        for(auto i : LeftArm){
-            if(readframe(s1, &cf)) {
-                auto [id, err,pos,vel,torq,temp] = hRx.parse_Rx_frame(&cf);
-                std::cout << "id : " <<id <<"  err :" << (err==0) <<"  pos : " <<pos << "  vel : " <<vel << "  torque : " <<torq;
+        if (readframe(s1, &cf)) {
+            auto  [id, err,p,v,t,tem] = hRx.parse_Rx_frame(&cf);
+            if(err)[[unlikely]] {
+                std::cerr<<id<<"," <<" errorcode: " <<err; // 여기에 모터를 멈충는 함수를 넣어야 하는데 
+                return -1;
+            }else{
+                hRx.Write_Fb(id, p,v,t,tem);  
             }
         }
+        
+        std::apply([](auto&... vecs) {
+            (..., [](auto& vec) {
+                //for (auto& motor : vec) motor.write_updated_operation_frame();
+                for (auto& motor : vec) motor.write_operation_frame(0,1,1);
+            }(vecs));
+        }, Left_Leg);
 
-        for(auto &i : LeftArm) {
-            std::visit([&](auto& motor) {
-                motor.write_operation_frame(motor.control_param.pos, motor.control_param.Kp, motor.control_param.Kd);
-            }, i);
-
-        };  
     }
 
 

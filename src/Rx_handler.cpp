@@ -3,7 +3,7 @@
 static constexpr float CAN_DATA_ZERO_SCALE = 1.0f / 32767.0f;
 static constexpr float POS_GAIN = M_PI*4;
 
-Rx_handler::Rx_handler(const Motor_con MC){
+Rx_handler::Rx_handler(Motor_con& MC){
     init_helper(MC);
 }
 

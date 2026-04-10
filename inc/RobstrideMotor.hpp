@@ -12,6 +12,7 @@
 #include <variant>
 #include <tuple>
 #include <vector>
+#include <algorithm>
 
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -20,7 +21,7 @@
 #include <linux/can/raw.h>
 
 #include "Areum2.hpp"
-
+#include "utils.hpp"
 
 const uint32_t COMM_WRITE_PARAMETER = 18;
 const uint32_t COMM_ENABLE = 3;
@@ -43,16 +44,16 @@ template <RobstrideMotor_type T> struct MotorConstants{
 template <> struct MotorConstants<RobstrideMotor_type::RS00>
 {
     static constexpr double POS_SCALE = 4 * M_PI; // rs-00
-    static constexpr double VEL_SCALE = 50.0;     // rs-00
+    static constexpr double VEL_SCALE = 33.0;     // rs-00  
     static constexpr double KP_SCALE = 500.0;    // rs-00
     static constexpr double KD_SCALE = 5.0;     // rs-00
-    static constexpr double TQ_SCALE = 17.0;      // rs-00
+    static constexpr double TQ_SCALE = 14.0;      // rs-00  // 시트에는 이거 14 라는데 
 };
 
 template <> struct MotorConstants<RobstrideMotor_type::RS01>
 {
     static constexpr double POS_SCALE = 4 * M_PI; // rs-01
-    static constexpr double VEL_SCALE = 44.0;     // rs-01
+    static constexpr double VEL_SCALE = 44.0;     // rs-01  // 시트에는 이거 44 라는데 
     static constexpr double KP_SCALE = 500.0;    // rs-01
     static constexpr double KD_SCALE = 5.0;     // rs-01
     static constexpr double TQ_SCALE = 17.0;      // rs-01
@@ -64,13 +65,13 @@ template <> struct MotorConstants<RobstrideMotor_type::RS02>
     static constexpr double VEL_SCALE = 44.0;     // rs-02
     static constexpr double KP_SCALE = 500.0;    // rs-02
     static constexpr double KD_SCALE = 5.0;     // rs-02
-    static constexpr double TQ_SCALE = 17.0;      // rs-02    /* data */
+    static constexpr double TQ_SCALE = 17.0;      // rs-02    /* data */  이상 무 
 };
 
 template <> struct MotorConstants<RobstrideMotor_type::RS03>
 {
     static constexpr double POS_SCALE = 4 * M_PI; // rs-03
-    static constexpr double VEL_SCALE = 50.0;     // rs-03
+    static constexpr double VEL_SCALE = 20.0;     // rs-03  // 시트에는 이거 20 이라는데 
     static constexpr double KP_SCALE = 5000.0;    // rs-03
     static constexpr double KD_SCALE = 100.0;     // rs-03
     static constexpr double TQ_SCALE = 60.0;      // rs-03    /* data */
@@ -82,43 +83,43 @@ template <> struct MotorConstants<RobstrideMotor_type::RS04>
     static constexpr double VEL_SCALE = 15.0;     // rs-04
     static constexpr double KP_SCALE = 5000.0;    // rs-04
     static constexpr double KD_SCALE = 100.0;     // rs-04
-    static constexpr double TQ_SCALE = 120.0;      // rs-04   /* data */
+    static constexpr double TQ_SCALE = 120.0;      // rs-04   /* data */  이상 무 
 };
 
 template <> struct MotorConstants<RobstrideMotor_type::RS05>
 {
     static constexpr double POS_SCALE = 4 * M_PI; // rs-05
-    static constexpr double VEL_SCALE = 33.0;     // rs-05
+    static constexpr double VEL_SCALE = 50.0;     // rs-05  // 시트에는 이거 50 이라는데 
     static constexpr double KP_SCALE = 500.0;    // rs-05
-    static constexpr double KD_SCALE = 5.0;     // rs-05
-    static constexpr double TQ_SCALE = 17.0;      // rs-05    /* data */
+    static constexpr double KD_SCALE = 5.0;     // rs-05  
+    static constexpr double TQ_SCALE = 5.5;      // rs-05    /* data */  // 시트에는 이거 5.5 라는데 
 };
 
 template <> struct MotorConstants<RobstrideMotor_type::RS06>
 {
     static constexpr double POS_SCALE = 4 * M_PI; // rs-06
-    static constexpr double VEL_SCALE = 20.0;     // rs-06
+    static constexpr double VEL_SCALE = 50.0;     // rs-06// 시트에는 이거 50 이라는데 
     static constexpr double KP_SCALE = 5000.0;    // rs-06
-    static constexpr double KD_SCALE = 100.0;     // rs-06
-    static constexpr double TQ_SCALE = 60.0;      // rs-06    /* data */
+    static constexpr double KD_SCALE = 100.0;     // rs-06      
+    static constexpr double TQ_SCALE = 36.0;      // rs-06    /* data */  // 시트에는 이거 36 이라는데 
 };
 
 template <> struct MotorConstants<RobstrideMotor_type::EL05>  //EL05 데이터 확인 필요 
 {
     static constexpr double POS_SCALE = 4 * M_PI; 
-    static constexpr double VEL_SCALE = 20.0;     
+    static constexpr double VEL_SCALE = 50.0;     // 시트에는 이거 50 이라는데 
     static constexpr double KP_SCALE = 500.0;    
     static constexpr double KD_SCALE = 5.0;     
-    static constexpr double TQ_SCALE = 17.0;         
+    static constexpr double TQ_SCALE = 6.0;         // 시트에는 이거 6 이라는데 
 };
 
 typedef struct 
 {
-    uint16_t pos;
-    uint16_t vel;
-    uint16_t Kp;
-    uint16_t Kd;
-    uint16_t ffTorque;
+    double pos;
+    double vel;
+    double Kp;
+    double Kd;
+    double ffTorque;
 }Control_param;
 
 typedef struct{          // TODO : 프로토콜에 맞춰서 피드백 데이터 넣기 아이디 확인해서 여기에 채워넣는거라 모터 말고 다른 클래스를 만드는게 좋음 
@@ -248,8 +249,61 @@ class RobstrideMotor {
         uint16_t pos_u16 = (uint16_t)(((pos_clamped / MotorConstants<Motor_type>::POS_SCALE) + 1.0) * 0x7FFF);
         uint16_t vel_u16 = 0x7FFF; // 0 velocity
         uint16_t kp_u16 = (uint16_t)((kp_clamped / MotorConstants<Motor_type>::KP_SCALE) * 0xFFFF);
+        uint16_t kd_u16 = (uint16_t)((kd_clamped / MotorConstants<Motor_type>::KD_SCALE) * 0xFFFF);         // 이거 나누기가 아니었는데? << 모터 상수 컨테이너에 역수를 추가하자 
+        uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
+    
+        uint8_t data[8];
+        pack_u16_be(&data[0], pos_u16);
+        pack_u16_be(&data[2], vel_u16);
+        pack_u16_be(&data[4], kp_u16);
+        pack_u16_be(&data[6], kd_u16);
+        
+            // 2. Construct CAN ID
+            //uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | (torque_u16 << 8) | motor_id;      
+        uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; // 정수형으로 변환되어 연산되는 경우가 잦으므로 비트마스킹을 하는것이 좋은 습관 
+        
+            // 3. Send
+        return send_frame(ext_id, data, 8);
+    
+    }
+
+    bool write_pos_pd_frame(double pos, double kp_val, double kd_val) {     // 이름처럼 포즈에 pd. 원래의 오퍼레이션 함수 원형에서 상수만 바꿈
+
+                    // Clamp and convert
+        double pos_clamped = std::max(-MotorConstants<Motor_type>::POS_SCALE, std::min(MotorConstants<Motor_type>::POS_SCALE, pos));
+        double kp_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KP_SCALE, kp_val));
+        double kd_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KD_SCALE, kd_val));               
+        
+        uint16_t pos_u16 = (uint16_t)(((pos_clamped / MotorConstants<Motor_type>::POS_SCALE) + 1.0) * 0x7FFF);
+        uint16_t vel_u16 = 0x7FFF; // 0 velocity
+        uint16_t kp_u16 = (uint16_t)((kp_clamped / MotorConstants<Motor_type>::KP_SCALE) * 0xFFFF);
         uint16_t kd_u16 = (uint16_t)((kd_clamped / MotorConstants<Motor_type>::KD_SCALE) * 0xFFFF);
         uint16_t torque_u16 = 0x7FFF; // 0 torque_ff
+    
+        uint8_t data[8];
+        pack_u16_be(&data[0], pos_u16);
+        pack_u16_be(&data[2], vel_u16);
+        pack_u16_be(&data[4], kp_u16);
+        pack_u16_be(&data[6], kd_u16);
+        
+        uint32_t ext_id = (COMM_OPERATION_CONTROL << 24) | ((0xffff&torque_u16) << 8) | can_id; 
+        
+        return send_frame(ext_id, data, 8);
+    }
+
+    bool write_updated_operation_frame() {  // 이건 가진 구조체에 뭐 다른 스레드건 shm을 올리건 해서 업데이트 된 정보를 쏘는 함수
+
+        double pos_clamped = std::max(-MotorConstants<Motor_type>::POS_SCALE, std::min(MotorConstants<Motor_type>::POS_SCALE, control_param.pos));
+        double kp_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KP_SCALE, control_param.Kp));
+        double kd_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KD_SCALE, control_param.Kd));                // std::clamp로 바꾸고 싶다 그죠? 
+        double vel_clamped = std::clamp(control_param.vel , -MotorConstants<Motor_type>::VEL_SCALE, MotorConstants<Motor_type>::VEL_SCALE);
+        double torque_clamped = std::clamp(control_param.ffTorque , -MotorConstants<Motor_type>::TQ_SCALE, MotorConstants<Motor_type>::TQ_SCALE);
+
+        uint16_t pos_u16 = (uint16_t)(((pos_clamped / MotorConstants<Motor_type>::POS_SCALE) + 1.0) * 0x7FFF);
+        uint16_t vel_u16 = (uint16_t)(((vel_clamped / MotorConstants<Motor_type>::VEL_SCALE) + 1.0) * 0x7FFF);
+        uint16_t kp_u16 = (uint16_t)((kp_clamped / MotorConstants<Motor_type>::KP_SCALE) * 0xFFFF);
+        uint16_t kd_u16 = (uint16_t)((kd_clamped / MotorConstants<Motor_type>::KD_SCALE) * 0xFFFF);
+        uint16_t torque_u16 = (uint16_t)(((torque_clamped / MotorConstants<Motor_type>::TQ_SCALE) + 1.0) * 0x7FFF);
     
         uint8_t data[8];
         pack_u16_be(&data[0], pos_u16);

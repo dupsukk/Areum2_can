@@ -323,7 +323,7 @@ class RobstrideMotor {
     bool read_operation_frame(int s) {
         struct can_frame frame;
         if (read_frame(s, &frame)) {
-            if (!frame.can_id & CAN_EFF_FLAG) return false;
+            if (!(frame.can_id & CAN_EFF_FLAG)) return false;
             
             uint32_t comm_type = (frame.can_id >> 24) & 0x1F;
             if (comm_type == 2) { // Status packet

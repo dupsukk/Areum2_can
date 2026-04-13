@@ -1,7 +1,6 @@
 #include "Rx_handler.hpp"
 
 static constexpr float CAN_DATA_ZERO_SCALE = 1.0f / 32767.0f;
-static constexpr float POS_GAIN = M_PI*4;
 
 Rx_handler::Rx_handler(Motor_con& MC){
     init_helper(MC);
@@ -17,7 +16,7 @@ std::tuple<uint32_t, uint32_t, float,float,float,float> Rx_handler::parse_Rx_fra
     uint16_t t_raw = (frame->data[4] << 8) | frame->data[5];
 
     // (Raw / 32767.0 - 1.0) * GAIN
-    float pos = (static_cast<float>(p_raw) * CAN_DATA_ZERO_SCALE - 1.0f) * POS_GAIN;
+    float pos = static_cast<float>(p_raw) * CAN_DATA_ZERO_SCALE - 1.0f;
     float vel = (static_cast<float>(v_raw) * CAN_DATA_ZERO_SCALE - 1.0f) ; // 게인 추가
     float torq = (static_cast<float>(t_raw) * CAN_DATA_ZERO_SCALE - 1.0f);  // 나눗셈 대신 곱셈을 사용할 것이 권장됨 
     float temp = static_cast<float>((frame->data[6] << 8) | frame->data[7]) * 0.1f;

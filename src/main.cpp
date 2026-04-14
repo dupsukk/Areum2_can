@@ -44,13 +44,15 @@ int main(){
 
     Rx_handler hRx(Left_Leg) ;
 
-    sleep(5);
+    sleep(1);
+    while (readframe(s1, &cf));
+
     RTC.reset();
 
     while(running){
         RTC.wait_next(CONTROL_PERIOD);
 
-        if (readframe(s1, &cf)) {
+        while (readframe(s1, &cf)) {
             auto  [id, err,p,v,t,tem] = hRx.parse_Rx_frame(&cf);
             if(err)[[unlikely]] {
                 std::cerr<<id<<"," <<" errorcode: " <<err; // 여기에 모터를 멈충는 함수를 넣어야 하는데 
@@ -63,12 +65,10 @@ int main(){
         std::apply([](auto&... vecs) {
             (..., [](auto& vec) {
                 //for (auto& motor : vec) motor.write_updated_operation_frame();
-                for (auto& motor : vec) motor.write_operation_frame(0,1,1);
+                for (auto& motor : vec) motor.write_operation_frame(0,0,0);
             }(vecs));
         }, Left_Leg);
 
     }
-
-
     return 0;
 }

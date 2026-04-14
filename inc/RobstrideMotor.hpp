@@ -267,12 +267,15 @@ class RobstrideMotor {
     
     }
 
-    bool write_pos_pd_frame(double pos, double kp_val, double kd_val) {     // 이름처럼 포즈에 pd. 원래의 오퍼레이션 함수 원형에서 상수만 바꿈
+    bool write_pos_pd_frame(double pos, double vel,double kp_val, double kd_val, double fftorque) {     // 이름처럼 포즈에 pd. 원래의 오퍼레이션 함수 원형에서 상수만 바꿈
 
                     // Clamp and convert
         double pos_clamped = std::max(-MotorConstants<Motor_type>::POS_SCALE, std::min(MotorConstants<Motor_type>::POS_SCALE, pos));
         double kp_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KP_SCALE, kp_val));
-        double kd_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KD_SCALE, kd_val));               
+        double kd_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KD_SCALE, kd_val));
+        double vel_clamped = std::clamp(vel , -MotorConstants<Motor_type>::VEL_SCALE, MotorConstants<Motor_type>::VEL_SCALE);
+        double torque_clamped = std::clamp(fftorque , -MotorConstants<Motor_type>::TQ_SCALE, MotorConstants<Motor_type>::TQ_SCALE);
+               
         
         uint16_t pos_u16 = (uint16_t)(((pos_clamped / MotorConstants<Motor_type>::POS_SCALE) + 1.0) * 0x7FFF);
         uint16_t vel_u16 = 0x7FFF; // 0 velocity

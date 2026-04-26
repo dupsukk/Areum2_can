@@ -1,6 +1,7 @@
 # Build
 Areum2_can
 *.o
+*.d
 
 # Editor & OS
 .vscode/

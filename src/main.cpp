@@ -12,6 +12,7 @@ const char* CAN_INTERFACE_0 = "can0";
 const char* CAN_INTERFACE_1 = "can1";
 bool running = true; 
 constexpr long CONTROL_PERIOD = 2000000;
+constexpr int MaxID = 32;
 
 Motor_con Left_Leg ;
 
@@ -42,7 +43,7 @@ int main(){
         }(vecs));
     }, Left_Leg);
 
-    Rx_handler hRx(Left_Leg) ;
+    Rx_handler<MaxID> hRx(Left_Leg) ;
 
     sleep(1);
     while (readframe(s1, &cf));

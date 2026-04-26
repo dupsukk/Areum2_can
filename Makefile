@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -Iinc -Wall -Wextra -std=c++20 -O2 
-LDFLAGS = 
+CXXFLAGS = -Iinc -Wall -Wextra -std=c++20 -O2 -MMD -MP
+LDFLAGS =
 
 TARGET = Areum2_can
 
@@ -9,10 +9,11 @@ SRC_DIR = src
 INC_DIR = inc
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 OBJS = $(SRCS:.cpp=.o)
+DEPS = $(OBJS:.o=.d)
 
 # Default target
 all: $(TARGET)
-	@chmod +x start.sh  
+	@chmod +x start.sh
 
 # Link the executable
 $(TARGET): $(OBJS)
@@ -22,8 +23,11 @@ $(TARGET): $(OBJS)
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Load auto-generated header dependencies
+-include $(DEPS)
+
 # Clean up
 clean:
-	rm -f $(SRC_DIR)/*.o $(TARGET)
+	rm -f $(SRC_DIR)/*.o $(SRC_DIR)/*.d $(TARGET)
 
 .PHONY: all clean

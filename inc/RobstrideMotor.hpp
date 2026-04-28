@@ -186,12 +186,20 @@ class RobstrideMotor {
     const int can_id;
     Control_param control_param;
     Feedback_Param Feedback_param;
+    double pos_offset = 0.0;
+    bool calibrated = false;
 
 
-    RobstrideMotor(int can_interface,int can_id ): 
+    RobstrideMotor(int can_interface,int can_id ):
         can_interface(can_interface) ,can_id(can_id) {
             Feedback_param ={0};
-    
+
+    }
+
+    void calibrate(double expected = 0.0) {
+        double diff = Feedback_param.pos - expected;
+        pos_offset = -std::round(diff / (2*M_PI)) * (2*M_PI);
+        calibrated = true;
     }
     
     
@@ -338,7 +346,7 @@ class RobstrideMotor {
 
     bool write_updated_operation_frame() {  // 이건 가진 구조체에 뭐 다른 스레드건 shm을 올리건 해서 업데이트 된 정보를 쏘는 함수
 
-        double pos_clamped = std::max(-MotorConstants<Motor_type>::POS_SCALE, std::min(MotorConstants<Motor_type>::POS_SCALE, control_param.pos));
+        double pos_clamped = std::clamp(control_param.pos + pos_offset, -MotorConstants<Motor_type>::POS_SCALE, MotorConstants<Motor_type>::POS_SCALE);
         double kp_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KP_SCALE, control_param.Kp));
         double kd_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KD_SCALE, control_param.Kd));                // std::clamp로 바꾸고 싶다 그죠? 
         double vel_clamped = std::clamp(control_param.vel , -MotorConstants<Motor_type>::VEL_SCALE, MotorConstants<Motor_type>::VEL_SCALE);

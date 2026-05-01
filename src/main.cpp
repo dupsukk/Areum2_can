@@ -11,7 +11,7 @@
 
 const char* CAN_INTERFACE_0 = "can0";
 bool running = true;
-constexpr long CONTROL_PERIOD = 2000000;
+constexpr long CONTROL_PERIOD = 2'000'000;
 constexpr int MaxID = 32;
 
 constexpr int CAN_ID_LEFT_HIP_PITCH = 0x01;
@@ -19,7 +19,6 @@ constexpr int CAN_ID_LEFT_HIP_PITCH = 0x01;
 Motor_con Leg;
 
 void signal_handler(int signum) { running = false; }
-RealTimeClock RTC;
 
 void* print_thread_func(void*) {
     while (running) {
@@ -33,6 +32,7 @@ void* print_thread_func(void*) {
                         << " corr=" << motor.Feedback_param.pos + motor.pos_offset
                         << " vel="  << motor.Feedback_param.vel
                         << " torq=" << motor.Feedback_param.torque
+                        << " temp=" <<motor.Feedback_param.temp
                         << " off="  << motor.pos_offset
                         << "\n";
                 }
@@ -43,7 +43,7 @@ void* print_thread_func(void*) {
     return nullptr;
 }
 
-void* CAN_Comm_thread(void* arg) {
+void* CAN_Comm_thread(void* arg) {  // TODO : 캘리브레이션을 위한 로직을 따로 뺄 것 
     struct sched_param param;
     param.sched_priority = 99;
     pthread_setschedparam(pthread_self(), SCHED_FIFO, &param);
@@ -53,10 +53,16 @@ void* CAN_Comm_thread(void* arg) {
     int s1 = *(int*)arg;
 
     while (readframe(s1, &cf));
+    std::apply([](auto&... vecs) {
+        (..., [](auto& vec) {
+            for (auto& motor : vec) motor.write_operation_frame(0, 0, 0);
+        }(vecs));
+    }, Leg);
 
     // 첫 사이클: 피드백 수신 후 모든 모터 offset 캘리브레이션
-    RTC.reset();
+    RealTimeClock RTC;
     RTC.wait_next(CONTROL_PERIOD);
+
     while (readframe(s1, &cf)) {
         auto [id, err, p, v, t, tem] = hRx.parse_Rx_frame(&cf);
         if (!err) hRx.Write_Fb(id, p, v, t, tem);
@@ -83,7 +89,7 @@ void* CAN_Comm_thread(void* arg) {
         std::apply([](auto&... vecs) {
             (..., [](auto& vec) {
                 //for (auto& motor : vec) motor.write_updated_operation_frame();
-                for (auto& motor : vec) motor.write_operation_frame(0, 0, 0);
+                for (auto& motor : vec) motor.write_updated_operation_frame();
             }(vecs));
         }, Leg);
     }

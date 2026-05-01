@@ -184,16 +184,14 @@ class RobstrideMotor {
 
     public:
     const int can_id;
-    Control_param control_param;
-    Feedback_Param Feedback_param;
+    Control_param control_param={0};
+    Feedback_Param Feedback_param={0};
     double pos_offset = 0.0;
     bool calibrated = false;
 
 
     RobstrideMotor(int can_interface,int can_id ):
         can_interface(can_interface) ,can_id(can_id) {
-            Feedback_param ={0};
-
     }
 
     void calibrate(double expected = 0.0) {

@@ -43,7 +43,6 @@ class Rx_handler{
                 // 주소 저장 (const 에러 방지를 위해 void* 캐스팅)
                 Motor_object[id] = (void*)&motor;
     
-                // 람다도 훨씬 간결하게!
                 jump_table[id] = [](void* obj, float p, float v, float t, float tmp) {
                     // obj를 다시 해당 모터 타입으로 변환
                     using M_Type = typename V::value_type; 
@@ -79,7 +78,7 @@ class Rx_handler{
         float vel = (static_cast<float>(v_raw) * CAN_DATA_ZERO_SCALE - 1.0f) ; // 게인 추가
         float torq = (static_cast<float>(t_raw) * CAN_DATA_ZERO_SCALE - 1.0f);  // 나눗셈 대신 곱셈을 사용할 것이 권장됨 
         float temp = static_cast<float>((frame->data[6] << 8) | frame->data[7]) * 0.1f;
-        // 근데 여기서 다 처리하려면 밖에서 뭐 탬플릿 받아오고 해야하는데 귀찮으니까 로우 데이터 던지고 밖에서 처리? <<솔직히 킹쁘지 않음 
+        // 근데 여기서 다 처리하려면 밖에서 뭐 탬플릿 받아오고 해야하는데 귀찮으니까 로우 데이터 던지고 밖에서 처리? <<솔직히 킹쁘지 않음 << 모터 객체에 처리함수 잇음
         return {motor_id , err_st,pos,vel,torq,temp};
     }
 

@@ -13,9 +13,9 @@ class RealTimeClock {
     
     void wait_next(long nano_sleeptime) {
         next_time_.tv_nsec += nano_sleeptime;
-        if (next_time_.tv_nsec >= 1000000000) {
+        if (next_time_.tv_nsec >= 1'000'000'000) {
             next_time_.tv_sec += 1;
-            next_time_.tv_nsec -= 1000000000;
+            next_time_.tv_nsec -= 1'000'000'000;
         }
         while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_time_, nullptr) != 0) ;
     }

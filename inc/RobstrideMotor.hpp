@@ -5,13 +5,14 @@
 #include <stdlib.h>
 #include <string>
 #include <cstring>
-#include <atomic>  // not using at this moment 
+#include <atomic>  
 #include <stdio.h>
 #include <unistd.h>
 #include <cmath>
 #include <variant>
 #include <tuple>
 #include <vector>
+#include <deque>
 #include <algorithm>
 
 #include <net/if.h>
@@ -22,14 +23,16 @@
 
 #include "Areum2.hpp"
 #include "utils.hpp"
+//#include "Sharemem.hpp"
 
-const uint32_t COMM_WRITE_PARAMETER = 18;
-const uint32_t COMM_ENABLE = 3;
-const int HOST_ID = 0xFF;
-const uint16_t PARAM_MODE = 0x7005;
-const uint32_t COMM_OPERATION_CONTROL = 1;
-const uint16_t PARAM_VELOCITY_LIMIT = 0x7017;
-const uint16_t PARAM_TORQUE_LIMIT = 0x700B;           
+
+constexpr uint32_t COMM_WRITE_PARAMETER = 18;
+constexpr uint32_t COMM_ENABLE = 3;
+constexpr int HOST_ID = 0xAB;               //크게 의미는 없긴 한데 기존의 FF로 하면 비트스터핑이 2~3개 들어감. 그거 보기 싫어서 
+constexpr uint16_t PARAM_MODE = 0x7005;
+constexpr uint32_t COMM_OPERATION_CONTROL = 1;
+constexpr uint16_t PARAM_VELOCITY_LIMIT = 0x7017;
+constexpr uint16_t PARAM_TORQUE_LIMIT = 0x700B;           
 
 enum class RobstrideMotor_type {RS00 = 0, RS01 =1 , RS02 =2 , RS03 = 3, RS04= 4, RS05 =5, RS06=6, EL05 = 7};
 
@@ -57,7 +60,7 @@ template <> struct MotorConstants<RobstrideMotor_type::RS00>
     static constexpr double INV_VEL_SCALE = 1.0 / VEL_SCALE;
     static constexpr double INV_KP_SCALE = 1.0 / KP_SCALE;
     static constexpr double INV_KD_SCALE = 1.0 / KD_SCALE;
-    static constexpr double INV_TQ_SCALE = 1.0 / TQ_SCALE;
+    static constexpr double INV_TQ_SCALE = 1.0 / TQ_SCALE;    //인버스 스케일의 경우 그냥 나누기 해도 알아서 최적화 해주겠지만 의도를 명확히 하기 위함
 };
 
 template <> struct MotorConstants<RobstrideMotor_type::RS01>
@@ -158,21 +161,21 @@ template <> struct MotorConstants<RobstrideMotor_type::EL05>  //EL05 데이터 �
     static constexpr double INV_TQ_SCALE = 1.0 / TQ_SCALE;
 };
 
-typedef struct 
-{
-    double pos;
-    double vel;
-    double Kp;
-    double Kd;
-    double ffTorque;
-}Control_param;
 
-typedef struct{          // TODO : 프로토콜에 맞춰서 피드백 데이터 넣기 아이디 확인해서 여기에 채워넣는거라 모터 말고 다른 클래스를 만드는게 좋음 
-    float pos; 
-    float vel;
-    float torque;
-    float temp;
-}Feedback_Param;
+struct Motor_Control_param {
+    std::atomic<double> pos{0.0};
+    std::atomic<double> vel{0.0};
+    std::atomic<double> Kp{0.0};
+    std::atomic<double> Kd{0.0};
+    std::atomic<double> ffTorque{0.0};
+};
+
+struct Motor_Feedback_Param {
+    std::atomic<float> pos{0.0f};
+    std::atomic<float> vel{0.0f};
+    std::atomic<float> torque{0.0f};
+    std::atomic<float> temp{0.0f};
+};
 
 
 template <RobstrideMotor_type Motor_type>
@@ -184,14 +187,20 @@ class RobstrideMotor {
 
     public:
     const int can_id;
-    Control_param control_param;
-    Feedback_Param Feedback_param;
+    Motor_Control_param control_param;
+    Motor_Feedback_Param Feedback_param;
+    double pos_offset = 0.0;
+    bool calibrated = false;
 
 
-    RobstrideMotor(int can_interface,int can_id ): 
+    RobstrideMotor(int can_interface,int can_id ):
         can_interface(can_interface) ,can_id(can_id) {
-            Feedback_param ={0};
-    
+    }
+
+    void calibrate(double expected = 0.0) {
+        double diff = Feedback_param.pos.load(std::memory_order_relaxed) - expected;
+        pos_offset = -std::round(diff / (2*M_PI)) * (2*M_PI);
+        calibrated = true;
     }
     
     
@@ -338,11 +347,11 @@ class RobstrideMotor {
 
     bool write_updated_operation_frame() {  // 이건 가진 구조체에 뭐 다른 스레드건 shm을 올리건 해서 업데이트 된 정보를 쏘는 함수
 
-        double pos_clamped = std::max(-MotorConstants<Motor_type>::POS_SCALE, std::min(MotorConstants<Motor_type>::POS_SCALE, control_param.pos));
-        double kp_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KP_SCALE, control_param.Kp));
-        double kd_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KD_SCALE, control_param.Kd));                // std::clamp로 바꾸고 싶다 그죠? 
-        double vel_clamped = std::clamp(control_param.vel , -MotorConstants<Motor_type>::VEL_SCALE, MotorConstants<Motor_type>::VEL_SCALE);
-        double torque_clamped = std::clamp(control_param.ffTorque , -MotorConstants<Motor_type>::TQ_SCALE, MotorConstants<Motor_type>::TQ_SCALE);
+        double pos_clamped = std::clamp(control_param.pos.load(std::memory_order_relaxed) + pos_offset, -MotorConstants<Motor_type>::POS_SCALE, MotorConstants<Motor_type>::POS_SCALE);
+        double kp_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KP_SCALE, control_param.Kp.load(std::memory_order_relaxed)));
+        double kd_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KD_SCALE, control_param.Kd.load(std::memory_order_relaxed)));
+        double vel_clamped = std::clamp(control_param.vel.load(std::memory_order_relaxed), -MotorConstants<Motor_type>::VEL_SCALE, MotorConstants<Motor_type>::VEL_SCALE);
+        double torque_clamped = std::clamp(control_param.ffTorque.load(std::memory_order_relaxed), -MotorConstants<Motor_type>::TQ_SCALE, MotorConstants<Motor_type>::TQ_SCALE);
 
         uint16_t pos_u16 = (uint16_t)((pos_clamped * MotorConstants<Motor_type>::INV_POS_SCALE + 1.0) * 0x7FFF);
         uint16_t vel_u16 = (uint16_t)((vel_clamped * MotorConstants<Motor_type>::INV_VEL_SCALE + 1.0) * 0x7FFF);
@@ -398,11 +407,11 @@ class RobstrideMotor {
     }
 
 
-    void write_FB(float pos, float vel , float torq_raw , float temp){
-        Feedback_param.pos = pos*MotorConstants<Motor_type>::POS_SCALE;
-        Feedback_param.vel = vel*MotorConstants<Motor_type>::VEL_SCALE;
-        Feedback_param.torque = torq_raw*MotorConstants<Motor_type>::TQ_SCALE;
-        Feedback_param.temp = temp;
+    void write_FB(float pos, float vel, float torq_raw, float temp) {
+        Feedback_param.pos.store   (static_cast<float>(pos      * MotorConstants<Motor_type>::POS_SCALE), std::memory_order_relaxed);
+        Feedback_param.vel.store   (static_cast<float>(vel      * MotorConstants<Motor_type>::VEL_SCALE), std::memory_order_relaxed);
+        Feedback_param.torque.store(static_cast<float>(torq_raw * MotorConstants<Motor_type>::TQ_SCALE),  std::memory_order_relaxed);
+        Feedback_param.temp.store  (temp, std::memory_order_relaxed);
     }
 
 
@@ -410,21 +419,21 @@ class RobstrideMotor {
 
 
 using Motortype = std::variant<RobstrideMotor<RobstrideMotor_type::RS00> , RobstrideMotor<RobstrideMotor_type::RS01>,RobstrideMotor<RobstrideMotor_type::RS02> ,RobstrideMotor<RobstrideMotor_type::RS03> ,RobstrideMotor<RobstrideMotor_type::RS04> ,RobstrideMotor<RobstrideMotor_type::RS05>,RobstrideMotor<RobstrideMotor_type::RS06>,RobstrideMotor<RobstrideMotor_type::EL05>>;
- // 
-using Motor_con = std::tuple<std::vector<RobstrideMotor<RobstrideMotor_type::RS00>>, std::vector<RobstrideMotor<RobstrideMotor_type::RS01>>,
-std::vector<RobstrideMotor<RobstrideMotor_type::RS02>> ,std::vector<RobstrideMotor<RobstrideMotor_type::RS03>>
- ,std::vector<RobstrideMotor<RobstrideMotor_type::RS04>> ,std::vector<RobstrideMotor<RobstrideMotor_type::RS05>>,
- std::vector<RobstrideMotor<RobstrideMotor_type::RS06>>,std::vector<RobstrideMotor<RobstrideMotor_type::EL05>>>;
+ // std::atomic is not movable/copyable — deque::emplace_back works without move, vector does not
+using Motor_con = std::tuple<std::deque<RobstrideMotor<RobstrideMotor_type::RS00>>, std::deque<RobstrideMotor<RobstrideMotor_type::RS01>>,
+std::deque<RobstrideMotor<RobstrideMotor_type::RS02>> ,std::deque<RobstrideMotor<RobstrideMotor_type::RS03>>
+ ,std::deque<RobstrideMotor<RobstrideMotor_type::RS04>> ,std::deque<RobstrideMotor<RobstrideMotor_type::RS05>>,
+ std::deque<RobstrideMotor<RobstrideMotor_type::RS06>>,std::deque<RobstrideMotor<RobstrideMotor_type::EL05>>>;
 
- 
- using RS00_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS00>>; 
- using RS01_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS01>>; 
- using RS02_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS02>>; 
- using RS03_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS03>>; 
- using RS04_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS04>>; 
- using RS05_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS05>>; 
- using RS06_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::RS06>>; 
- using EL05_Vec = std::vector<RobstrideMotor<RobstrideMotor_type::EL05>>; 
+
+ using RS00_Vec = std::deque<RobstrideMotor<RobstrideMotor_type::RS00>>;
+ using RS01_Vec = std::deque<RobstrideMotor<RobstrideMotor_type::RS01>>;
+ using RS02_Vec = std::deque<RobstrideMotor<RobstrideMotor_type::RS02>>;
+ using RS03_Vec = std::deque<RobstrideMotor<RobstrideMotor_type::RS03>>;
+ using RS04_Vec = std::deque<RobstrideMotor<RobstrideMotor_type::RS04>>;
+ using RS05_Vec = std::deque<RobstrideMotor<RobstrideMotor_type::RS05>>;
+ using RS06_Vec = std::deque<RobstrideMotor<RobstrideMotor_type::RS06>>;
+ using EL05_Vec = std::deque<RobstrideMotor<RobstrideMotor_type::EL05>>; 
 
 
 int init_can(const char* interface) ;

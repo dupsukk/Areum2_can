@@ -347,7 +347,7 @@ class RobstrideMotor {
 
     bool write_updated_operation_frame() {  // 이건 가진 구조체에 뭐 다른 스레드건 shm을 올리건 해서 업데이트 된 정보를 쏘는 함수
 
-        double pos_clamped = std::clamp(control_param.pos.load(std::memory_order_relaxed) + pos_offset, -MotorConstants<Motor_type>::POS_SCALE, MotorConstants<Motor_type>::POS_SCALE);
+        double pos_clamped = std::clamp(control_param.pos.load(std::memory_order_relaxed) - pos_offset, -MotorConstants<Motor_type>::POS_SCALE, MotorConstants<Motor_type>::POS_SCALE);
         double kp_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KP_SCALE, control_param.Kp.load(std::memory_order_relaxed)));
         double kd_clamped = std::max(0.0, std::min(MotorConstants<Motor_type>::KD_SCALE, control_param.Kd.load(std::memory_order_relaxed)));
         double vel_clamped = std::clamp(control_param.vel.load(std::memory_order_relaxed), -MotorConstants<Motor_type>::VEL_SCALE, MotorConstants<Motor_type>::VEL_SCALE);

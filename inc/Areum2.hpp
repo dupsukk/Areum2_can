@@ -15,4 +15,38 @@
 #define CAN_ID_RIGHT_WRIST_YAW 0x17
 #define CAN_ID_RIGHT_EE 0x18
 
+//lEFT ARM LIMITS
+constexpr double MAX_POS_LEFT_SHOULDER_PITCH =   1.0;
+constexpr double MIN_POS_LEFT_SHOULDER_PITCH =  -1.0;
+constexpr double MAX_POS_LEFT_SHOULDER_ROLL =    1.0;
+constexpr double MIN_POS_LEFT_SHOULDER_ROLL =   -1.0;
+constexpr double MAX_POS_LEFT_SHOULDER_YAW =     1.0;
+constexpr double MIN_POS_LEFT_SHOULDER_YAW =    -1.0;
+constexpr double MAX_POS_LEFT_ELBOW =            1.0;
+constexpr double MIN_POS_LEFT_ELBOW =           -1.0;
+constexpr double MAX_POS_LEFT_WRIST_ROLL =       1.0;
+constexpr double MIN_POS_LEFT_WRIST_ROLL =      -1.0;
+constexpr double MAX_POS_LEFT_WRIST_PITCH =      1.0;
+constexpr double MIN_POS_LEFT_WRIST_PITCH =     -1.0;
+constexpr double MAX_POS_LEFT_WRIST_YAW =        1.0;
+constexpr double MIN_POS_LEFT_WRIST_YAW =       -1.0;
+constexpr double MAX_POS_LEFT_EE =               1.0;
+constexpr double MIN_POS_LEFT_EE =              -1.0;
 
+//RIGHT ARM LIMITS 
+constexpr double MAX_POS_RIGHT_SHOULDER_PITCH =   1.0;
+constexpr double MIN_POS_RIGHT_SHOULDER_PITCH =  -1.0;
+constexpr double MAX_POS_RIGHT_SHOULDER_ROLL =    1.0;
+constexpr double MIN_POS_RIGHT_SHOULDER_ROLL =   -1.0;
+constexpr double MAX_POS_RIGHT_SHOULDER_YAW =     1.0;
+constexpr double MIN_POS_RIGHT_SHOULDER_YAW =    -1.0;
+constexpr double MAX_POS_RIGHT_ELBOW =            1.0;
+constexpr double MIN_POS_RIGHT_ELBOW =           -1.0;
+constexpr double MAX_POS_RIGHT_WRIST_ROLL =       1.0;
+constexpr double MIN_POS_RIGHT_WRIST_ROLL =      -1.0;
+constexpr double MAX_POS_RIGHT_WRIST_PITCH =      1.0;
+constexpr double MIN_POS_RIGHT_WRIST_PITCH =     -1.0;
+constexpr double MAX_POS_RIGHT_WRIST_YAW =        1.0;
+constexpr double MIN_POS_RIGHT_WRIST_YAW =       -1.0;
+constexpr double MAX_POS_RIGHT_EE =               1.0;
+constexpr double MIN_POS_RIGHT_EE =              -1.0;

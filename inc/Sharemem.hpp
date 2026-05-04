@@ -5,6 +5,8 @@
 #include <sys/shm.h>
 #include <atomic>
 #include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #include <new>
 
 //#include "RobstrideMotor.hpp"

@@ -122,15 +122,15 @@ void* update_Control_params(void* args){
         while (!shm_ptr->try_read_ctrl(ctrl_buf));  // torn read면 재시도
                                                                                                                                     // COMMANDS
                                                                                                                                 // POS 
-        std::get<RS04_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[0].pos, -2.0, 2.0), std::memory_order_relaxed);  // L HIP PITCH 
-        std::get<RS04_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[1].pos, -2.0, 2.0), std::memory_order_relaxed);  // R HIP PITCH   
-        std::get<RS04_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[2].pos, -2.0, 2.0), std::memory_order_relaxed);  // L KNEE PITCH
-        std::get<RS04_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[3].pos, -2.0, 2.0), std::memory_order_relaxed);  // R KNEE PITCH
+        std::get<RS04_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[0].pos, MIN_POS_LEFT_HIP_PITCH, MAX_POS_LEFT_HIP_PITCH), std::memory_order_relaxed);  // L HIP PITCH 
+        std::get<RS04_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[1].pos, MIN_POS_RIGHT_HIP_PITCH, MAX_POS_RIGHT_HIP_PITCH), std::memory_order_relaxed);  // R HIP PITCH   
+        std::get<RS04_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[2].pos, MIN_POS_LEFT_KNEE_PITCH, MAX_POS_LEFT_KNEE_PITCH), std::memory_order_relaxed);  // L KNEE PITCH
+        std::get<RS04_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[3].pos, MIN_POS_RIGHT_KNEE_PITCH, MAX_POS_RIGHT_KNEE_PITCH), std::memory_order_relaxed);  // R KNEE PITCH
 
-        std::get<RS03_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[4].pos, -2.0, 2.0), std::memory_order_relaxed);  // L HIP ROLL 
-        std::get<RS03_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[5].pos, -2.0, 2.0), std::memory_order_relaxed);  // R HIP ROLL   
-        std::get<RS03_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[6].pos, -2.0, 2.0), std::memory_order_relaxed);  // L HIP YAW
-        std::get<RS03_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[7].pos, -2.0, 2.0), std::memory_order_relaxed);  // R HIP YAW
+        std::get<RS03_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[4].pos, MIN_POS_LEFT_HIP_ROLL, MAX_POS_LEFT_HIP_ROLL), std::memory_order_relaxed);  // L HIP ROLL
+        std::get<RS03_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[5].pos, MIN_POS_RIGHT_HIP_ROLL, MAX_POS_RIGHT_HIP_ROLL), std::memory_order_relaxed);  // R HIP ROLL
+        std::get<RS03_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[6].pos, MIN_POS_LEFT_HIP_YAW, MAX_POS_LEFT_HIP_YAW), std::memory_order_relaxed);  // L HIP YAW
+        std::get<RS03_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[7].pos, MIN_POS_RIGHT_HIP_YAW, MAX_POS_RIGHT_HIP_YAW), std::memory_order_relaxed);  // R HIP YAW
 
         std::get<RS06_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[8].pos, -2.0, 2.0), std::memory_order_relaxed);  // L ANKLE A 
         std::get<RS06_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[9].pos, -2.0, 2.0), std::memory_order_relaxed);  // R ANKLE A 
@@ -283,7 +283,7 @@ int main() {
 
     std::apply([](auto&... vecs) {
         (..., [](auto& vec) {
-            for (auto& motor : vec) motor.init_motor_MIT(1, 3);
+            for (auto& motor : vec) motor.init_motor_MIT(1, 10);
         }(vecs));
     }, Leg);
 

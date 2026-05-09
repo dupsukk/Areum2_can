@@ -49,9 +49,12 @@ void* CAN_Comm_thread(void* arg) {  // TODO : 캘리브레이션을 위한 로�
 
     Rx_handler<MaxID> hRx(Leg);
     can_frame cf;
-    int s1 = *(int*)arg;
+    auto& can_interface_vec = *static_cast<std::vector<int>*>(arg);
 
-    while (readframe(s1, &cf));
+    for(int s : can_interface_vec){
+        while (readframe(s, &cf));
+    }
+
     std::apply([](auto&... vecs) {
         (..., [](auto& vec) {
             for (auto& motor : vec) motor.write_operation_frame(0, 0, 0);
@@ -62,10 +65,13 @@ void* CAN_Comm_thread(void* arg) {  // TODO : 캘리브레이션을 위한 로�
     RealTimeClock RTC;
     RTC.wait_next(CONTROL_PERIOD);
 
-    while (readframe(s1, &cf)) {
-        auto [id, err, p, v, t, tem] = hRx.parse_Rx_frame(&cf);
-        if (!err) hRx.Write_Fb(id, p, v, t, tem);
+    for(int s : can_interface_vec){
+        while (readframe(s, &cf)) {
+            auto [id, err, p, v, t, tem] = hRx.parse_Rx_frame(&cf);
+            if (!err) hRx.Write_Fb(id, p, v, t, tem);
+        }
     }
+
     std::apply([](auto&... vecs) {
         (..., [](auto& vec) {
             for (auto& motor : vec) motor.calibrate();
@@ -76,18 +82,20 @@ void* CAN_Comm_thread(void* arg) {  // TODO : 캘리브레이션을 위한 로�
     while (running) {
         RTC.wait_next(CONTROL_PERIOD);
 
-        while (readframe(s1, &cf)) {
-            auto [id, err, p, v, t, tem] = hRx.parse_Rx_frame(&cf);
-            if (err) [[unlikely]] {
-                std::cerr << id << " errorcode: " << err;
-                return nullptr;
+        for(int s : can_interface_vec){
+            while (readframe(s, &cf)) {
+                auto [id, err, p, v, t, tem] = hRx.parse_Rx_frame(&cf);
+                if (err) [[unlikely]] {
+                    std::cerr << id << " errorcode: " << err;
+                    return nullptr;
+                }
+                hRx.Write_Fb(id, p, v, t, tem);
             }
-            hRx.Write_Fb(id, p, v, t, tem);
         }
+
 
         std::apply([](auto&... vecs) {
             (..., [](auto& vec) {
-                //for (auto& motor : vec) motor.write_updated_operation_frame();
                 for (auto& motor : vec) motor.write_updated_operation_frame();
             }(vecs));
         }, Leg);
@@ -156,8 +164,13 @@ int main() {
 
     signal(SIGINT, signal_handler);
 
+
+
     int s1 = init_can(CAN_INTERFACE_0);
     if (s1 < 0) return -1;
+
+
+    std::vector<int> can_interface = {s1};
 
     std::get<RS02_Vec>(Leg).emplace_back(s1, CAN_ID_LEFT_SHOULDER_PITCH);
     std::get<RS02_Vec>(Leg).emplace_back(s1, CAN_ID_LEFT_SHOULDER_ROLL);
@@ -173,7 +186,7 @@ int main() {
 
     //여기서 스레드 생성
     pthread_t rt_t, print_t, shm_t;
-    pthread_create(&rt_t,    NULL, CAN_Comm_thread,   &s1);
+    pthread_create(&rt_t,    NULL, CAN_Comm_thread,   &can_interface);
     pthread_create(&print_t, NULL, print_thread_func,  nullptr);  // 초반 확인용이라 나중에는 안쓰는 스레드임. 
     pthread_create(&shm_t, NULL, update_Control_params,  nullptr);
 

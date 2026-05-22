@@ -122,118 +122,118 @@ void* update_Control_params(void* args){
         while (!shm_ptr->try_read_ctrl(ctrl_buf));  // torn read면 재시도
                                                                                                                                     // COMMANDS
                                                                                                                                 // POS 
-        std::get<RS04_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[0].pos, MIN_POS_LEFT_HIP_PITCH, MAX_POS_LEFT_HIP_PITCH), std::memory_order_relaxed);  // L HIP PITCH 
-        std::get<RS04_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[1].pos, MIN_POS_RIGHT_HIP_PITCH, MAX_POS_RIGHT_HIP_PITCH), std::memory_order_relaxed);  // R HIP PITCH   
-        std::get<RS04_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[2].pos, MIN_POS_LEFT_KNEE_PITCH, MAX_POS_LEFT_KNEE_PITCH), std::memory_order_relaxed);  // L KNEE PITCH
-        std::get<RS04_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[3].pos, MIN_POS_RIGHT_KNEE_PITCH, MAX_POS_RIGHT_KNEE_PITCH), std::memory_order_relaxed);  // R KNEE PITCH
+        std::get<RS04_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].pos, MIN_POS_LEFT_HIP_PITCH, MAX_POS_LEFT_HIP_PITCH), std::memory_order_relaxed);  // L HIP PITCH 
+        std::get<RS04_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].pos, MIN_POS_RIGHT_HIP_PITCH, MAX_POS_RIGHT_HIP_PITCH), std::memory_order_relaxed);  // R HIP PITCH   
+        std::get<RS04_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].pos, MIN_POS_LEFT_KNEE_PITCH, MAX_POS_LEFT_KNEE_PITCH), std::memory_order_relaxed);  // L KNEE PITCH
+        std::get<RS04_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].pos, MIN_POS_RIGHT_KNEE_PITCH, MAX_POS_RIGHT_KNEE_PITCH), std::memory_order_relaxed);  // R KNEE PITCH
 
-        std::get<RS03_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[4].pos, MIN_POS_LEFT_HIP_ROLL, MAX_POS_LEFT_HIP_ROLL), std::memory_order_relaxed);  // L HIP ROLL
-        std::get<RS03_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[5].pos, MIN_POS_RIGHT_HIP_ROLL, MAX_POS_RIGHT_HIP_ROLL), std::memory_order_relaxed);  // R HIP ROLL
-        std::get<RS03_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[6].pos, MIN_POS_LEFT_HIP_YAW, MAX_POS_LEFT_HIP_YAW), std::memory_order_relaxed);  // L HIP YAW
-        std::get<RS03_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[7].pos, MIN_POS_RIGHT_HIP_YAW, MAX_POS_RIGHT_HIP_YAW), std::memory_order_relaxed);  // R HIP YAW
+        std::get<RS03_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].pos, MIN_POS_LEFT_HIP_ROLL, MAX_POS_LEFT_HIP_ROLL), std::memory_order_relaxed);  // L HIP ROLL
+        std::get<RS03_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].pos, MIN_POS_RIGHT_HIP_ROLL, MAX_POS_RIGHT_HIP_ROLL), std::memory_order_relaxed);  // R HIP ROLL
+        std::get<RS03_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].pos, MIN_POS_LEFT_HIP_YAW, MAX_POS_LEFT_HIP_YAW), std::memory_order_relaxed);  // L HIP YAW
+        std::get<RS03_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].pos, MIN_POS_RIGHT_HIP_YAW, MAX_POS_RIGHT_HIP_YAW), std::memory_order_relaxed);  // R HIP YAW
 
-        std::get<RS06_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[8].pos, -2.0, 2.0), std::memory_order_relaxed);  // L ANKLE A 
-        std::get<RS06_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[9].pos, -2.0, 2.0), std::memory_order_relaxed);  // R ANKLE A 
-        std::get<RS06_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[10].pos, -2.0, 2.0), std::memory_order_relaxed);  // L ANKLE B 
-        std::get<RS06_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[11].pos, -2.0, 2.0), std::memory_order_relaxed);  // R ANKLE B
+        std::get<RS06_Vec>(Leg)[0].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].pos, -2.0, 2.0), std::memory_order_relaxed);  // L ANKLE A 
+        std::get<RS06_Vec>(Leg)[1].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].pos, -2.0, 2.0), std::memory_order_relaxed);  // R ANKLE A 
+        std::get<RS06_Vec>(Leg)[2].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].pos, -2.0, 2.0), std::memory_order_relaxed);  // L ANKLE B 
+        std::get<RS06_Vec>(Leg)[3].control_param.pos.store(std::clamp(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].pos, -2.0, 2.0), std::memory_order_relaxed);  // R ANKLE B
 
                                                                                                             // Kp
-        std::get<RS04_Vec>(Leg)[0].control_param.Kp.store(ctrl_buf[0].Kp, std::memory_order_relaxed);       //
-        std::get<RS04_Vec>(Leg)[1].control_param.Kp.store(ctrl_buf[1].Kp, std::memory_order_relaxed);  
-        std::get<RS04_Vec>(Leg)[2].control_param.Kp.store(ctrl_buf[2].Kp, std::memory_order_relaxed);  
-        std::get<RS04_Vec>(Leg)[3].control_param.Kp.store(ctrl_buf[3].Kp, std::memory_order_relaxed);  
+        std::get<RS04_Vec>(Leg)[0].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].Kp, std::memory_order_relaxed);       //
+        std::get<RS04_Vec>(Leg)[1].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].Kp, std::memory_order_relaxed);  
+        std::get<RS04_Vec>(Leg)[2].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].Kp, std::memory_order_relaxed);  
+        std::get<RS04_Vec>(Leg)[3].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].Kp, std::memory_order_relaxed);  
 
-        std::get<RS03_Vec>(Leg)[0].control_param.Kp.store(ctrl_buf[4].Kp, std::memory_order_relaxed);       
-        std::get<RS03_Vec>(Leg)[1].control_param.Kp.store(ctrl_buf[5].Kp, std::memory_order_relaxed);  
-        std::get<RS03_Vec>(Leg)[2].control_param.Kp.store(ctrl_buf[6].Kp, std::memory_order_relaxed);  
-        std::get<RS03_Vec>(Leg)[3].control_param.Kp.store(ctrl_buf[7].Kp, std::memory_order_relaxed);  
+        std::get<RS03_Vec>(Leg)[0].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].Kp, std::memory_order_relaxed);       
+        std::get<RS03_Vec>(Leg)[1].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].Kp, std::memory_order_relaxed);  
+        std::get<RS03_Vec>(Leg)[2].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].Kp, std::memory_order_relaxed);  
+        std::get<RS03_Vec>(Leg)[3].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].Kp, std::memory_order_relaxed);  
         
-        std::get<RS06_Vec>(Leg)[0].control_param.Kp.store(ctrl_buf[8].Kp, std::memory_order_relaxed);       
-        std::get<RS06_Vec>(Leg)[1].control_param.Kp.store(ctrl_buf[9].Kp, std::memory_order_relaxed);  
-        std::get<RS06_Vec>(Leg)[2].control_param.Kp.store(ctrl_buf[10].Kp, std::memory_order_relaxed);  
-        std::get<RS06_Vec>(Leg)[3].control_param.Kp.store(ctrl_buf[11].Kp, std::memory_order_relaxed);  
+        std::get<RS06_Vec>(Leg)[0].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].Kp, std::memory_order_relaxed);       
+        std::get<RS06_Vec>(Leg)[1].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].Kp, std::memory_order_relaxed);  
+        std::get<RS06_Vec>(Leg)[2].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].Kp, std::memory_order_relaxed);  
+        std::get<RS06_Vec>(Leg)[3].control_param.Kp.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].Kp, std::memory_order_relaxed);  
 
                                                                                                             //Kd
-        std::get<RS04_Vec>(Leg)[0].control_param.Kd.store(ctrl_buf[0].Kd, std::memory_order_relaxed);       //
-        std::get<RS04_Vec>(Leg)[1].control_param.Kd.store(ctrl_buf[1].Kd, std::memory_order_relaxed);  
-        std::get<RS04_Vec>(Leg)[2].control_param.Kd.store(ctrl_buf[2].Kd, std::memory_order_relaxed);  
-        std::get<RS04_Vec>(Leg)[3].control_param.Kd.store(ctrl_buf[3].Kd, std::memory_order_relaxed);  
+        std::get<RS04_Vec>(Leg)[0].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].Kd, std::memory_order_relaxed);       //
+        std::get<RS04_Vec>(Leg)[1].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].Kd, std::memory_order_relaxed);  
+        std::get<RS04_Vec>(Leg)[2].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].Kd, std::memory_order_relaxed);  
+        std::get<RS04_Vec>(Leg)[3].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].Kd, std::memory_order_relaxed);  
 
-        std::get<RS03_Vec>(Leg)[0].control_param.Kd.store(ctrl_buf[4].Kd, std::memory_order_relaxed);       
-        std::get<RS03_Vec>(Leg)[1].control_param.Kd.store(ctrl_buf[5].Kd, std::memory_order_relaxed);  
-        std::get<RS03_Vec>(Leg)[2].control_param.Kd.store(ctrl_buf[6].Kd, std::memory_order_relaxed);  
-        std::get<RS03_Vec>(Leg)[3].control_param.Kd.store(ctrl_buf[7].Kd, std::memory_order_relaxed);  
+        std::get<RS03_Vec>(Leg)[0].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].Kd, std::memory_order_relaxed);       
+        std::get<RS03_Vec>(Leg)[1].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].Kd, std::memory_order_relaxed);  
+        std::get<RS03_Vec>(Leg)[2].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].Kd, std::memory_order_relaxed);  
+        std::get<RS03_Vec>(Leg)[3].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].Kd, std::memory_order_relaxed);  
         
-        std::get<RS06_Vec>(Leg)[0].control_param.Kd.store(ctrl_buf[8].Kd, std::memory_order_relaxed);       
-        std::get<RS06_Vec>(Leg)[1].control_param.Kd.store(ctrl_buf[9].Kd, std::memory_order_relaxed);  
-        std::get<RS06_Vec>(Leg)[2].control_param.Kd.store(ctrl_buf[10].Kd, std::memory_order_relaxed);  
-        std::get<RS06_Vec>(Leg)[3].control_param.Kd.store(ctrl_buf[11].Kd, std::memory_order_relaxed);  
+        std::get<RS06_Vec>(Leg)[0].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].Kd, std::memory_order_relaxed);       
+        std::get<RS06_Vec>(Leg)[1].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].Kd, std::memory_order_relaxed);  
+        std::get<RS06_Vec>(Leg)[2].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].Kd, std::memory_order_relaxed);  
+        std::get<RS06_Vec>(Leg)[3].control_param.Kd.store(ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].Kd, std::memory_order_relaxed);  
                                                                                                                                     // END COMMANDS
 
         
                                                                                                                                         // FEEDBACKS
-        fb_buf[0].pos = std::get<RS04_Vec>(Leg)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS04_Vec>(Leg)[0].pos_offset;
-        fb_buf[1].pos = std::get<RS04_Vec>(Leg)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS04_Vec>(Leg)[1].pos_offset;
-        fb_buf[2].pos = std::get<RS04_Vec>(Leg)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS04_Vec>(Leg)[2].pos_offset;
-        fb_buf[3].pos = std::get<RS04_Vec>(Leg)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS04_Vec>(Leg)[3].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].pos = std::get<RS04_Vec>(Leg)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS04_Vec>(Leg)[0].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].pos = std::get<RS04_Vec>(Leg)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS04_Vec>(Leg)[1].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].pos = std::get<RS04_Vec>(Leg)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS04_Vec>(Leg)[2].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].pos = std::get<RS04_Vec>(Leg)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS04_Vec>(Leg)[3].pos_offset;
 
-        fb_buf[4].pos = std::get<RS03_Vec>(Leg)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS03_Vec>(Leg)[0].pos_offset;
-        fb_buf[5].pos = std::get<RS03_Vec>(Leg)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS03_Vec>(Leg)[1].pos_offset;
-        fb_buf[6].pos = std::get<RS03_Vec>(Leg)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS03_Vec>(Leg)[2].pos_offset;
-        fb_buf[7].pos = std::get<RS03_Vec>(Leg)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS03_Vec>(Leg)[3].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].pos = std::get<RS03_Vec>(Leg)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS03_Vec>(Leg)[0].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].pos = std::get<RS03_Vec>(Leg)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS03_Vec>(Leg)[1].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].pos = std::get<RS03_Vec>(Leg)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS03_Vec>(Leg)[2].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].pos = std::get<RS03_Vec>(Leg)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS03_Vec>(Leg)[3].pos_offset;
 
-        fb_buf[8].pos = std::get<RS06_Vec>(Leg)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS06_Vec>(Leg)[0].pos_offset;
-        fb_buf[9].pos = std::get<RS06_Vec>(Leg)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS06_Vec>(Leg)[1].pos_offset;
-        fb_buf[10].pos = std::get<RS06_Vec>(Leg)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS06_Vec>(Leg)[2].pos_offset;
-        fb_buf[11].pos = std::get<RS06_Vec>(Leg)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS06_Vec>(Leg)[3].pos_offset;
-
-
-        fb_buf[0].vel = std::get<RS04_Vec>(Leg)[0].Feedback_param.vel.load(std::memory_order_relaxed);      //VEL
-        fb_buf[1].vel = std::get<RS04_Vec>(Leg)[1].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[2].vel = std::get<RS04_Vec>(Leg)[2].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[3].vel = std::get<RS04_Vec>(Leg)[3].Feedback_param.vel.load(std::memory_order_relaxed);
-
-        fb_buf[4].vel = std::get<RS03_Vec>(Leg)[0].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[5].vel = std::get<RS03_Vec>(Leg)[1].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[6].vel = std::get<RS03_Vec>(Leg)[2].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[7].vel = std::get<RS03_Vec>(Leg)[3].Feedback_param.vel.load(std::memory_order_relaxed);
-
-        fb_buf[8].vel = std::get<RS06_Vec>(Leg)[0].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[9].vel = std::get<RS06_Vec>(Leg)[1].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[10].vel = std::get<RS06_Vec>(Leg)[2].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[11].vel = std::get<RS06_Vec>(Leg)[3].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].pos = std::get<RS06_Vec>(Leg)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS06_Vec>(Leg)[0].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].pos = std::get<RS06_Vec>(Leg)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS06_Vec>(Leg)[1].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].pos = std::get<RS06_Vec>(Leg)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS06_Vec>(Leg)[2].pos_offset;
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].pos = std::get<RS06_Vec>(Leg)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS06_Vec>(Leg)[3].pos_offset;
 
 
-        fb_buf[0].torque = std::get<RS04_Vec>(Leg)[0].Feedback_param.torque.load(std::memory_order_relaxed);  //TORQUE
-        fb_buf[1].torque = std::get<RS04_Vec>(Leg)[1].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[2].torque = std::get<RS04_Vec>(Leg)[2].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[3].torque = std::get<RS04_Vec>(Leg)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].vel = std::get<RS04_Vec>(Leg)[0].Feedback_param.vel.load(std::memory_order_relaxed);      //VEL
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].vel = std::get<RS04_Vec>(Leg)[1].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].vel = std::get<RS04_Vec>(Leg)[2].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].vel = std::get<RS04_Vec>(Leg)[3].Feedback_param.vel.load(std::memory_order_relaxed);
 
-        fb_buf[4].torque = std::get<RS03_Vec>(Leg)[0].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[5].torque = std::get<RS03_Vec>(Leg)[1].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[6].torque = std::get<RS03_Vec>(Leg)[2].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[7].torque = std::get<RS03_Vec>(Leg)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].vel = std::get<RS03_Vec>(Leg)[0].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].vel = std::get<RS03_Vec>(Leg)[1].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].vel = std::get<RS03_Vec>(Leg)[2].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].vel = std::get<RS03_Vec>(Leg)[3].Feedback_param.vel.load(std::memory_order_relaxed);
 
-        fb_buf[8].torque = std::get<RS06_Vec>(Leg)[0].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[9].torque = std::get<RS06_Vec>(Leg)[1].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[10].torque = std::get<RS06_Vec>(Leg)[2].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[11].torque = std::get<RS06_Vec>(Leg)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].vel = std::get<RS06_Vec>(Leg)[0].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].vel = std::get<RS06_Vec>(Leg)[1].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].vel = std::get<RS06_Vec>(Leg)[2].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].vel = std::get<RS06_Vec>(Leg)[3].Feedback_param.vel.load(std::memory_order_relaxed);
+
+
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].torque = std::get<RS04_Vec>(Leg)[0].Feedback_param.torque.load(std::memory_order_relaxed);  //TORQUE
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].torque = std::get<RS04_Vec>(Leg)[1].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].torque = std::get<RS04_Vec>(Leg)[2].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].torque = std::get<RS04_Vec>(Leg)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].torque = std::get<RS03_Vec>(Leg)[0].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].torque = std::get<RS03_Vec>(Leg)[1].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].torque = std::get<RS03_Vec>(Leg)[2].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].torque = std::get<RS03_Vec>(Leg)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+
+        fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].torque = std::get<RS06_Vec>(Leg)[0].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].torque = std::get<RS06_Vec>(Leg)[1].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].torque = std::get<RS06_Vec>(Leg)[2].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].torque = std::get<RS06_Vec>(Leg)[3].Feedback_param.torque.load(std::memory_order_relaxed);
 
                                                                                                                 // 온도 피드백은 실제 제어할땐 필요없을 것으로 예상됨. 
-        fb_buf[0].temp = std::get<RS04_Vec>(Leg)[0].Feedback_param.temp.load(std::memory_order_relaxed);  //TEMP
-        fb_buf[1].temp = std::get<RS04_Vec>(Leg)[1].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[2].temp = std::get<RS04_Vec>(Leg)[2].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[3].temp = std::get<RS04_Vec>(Leg)[3].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].temp = std::get<RS04_Vec>(Leg)[0].Feedback_param.temp.load(std::memory_order_relaxed);  //TEMP
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].temp = std::get<RS04_Vec>(Leg)[1].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].temp = std::get<RS04_Vec>(Leg)[2].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].temp = std::get<RS04_Vec>(Leg)[3].Feedback_param.temp.load(std::memory_order_relaxed);
 
-        fb_buf[4].temp = std::get<RS03_Vec>(Leg)[0].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[5].temp = std::get<RS03_Vec>(Leg)[1].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[6].temp = std::get<RS03_Vec>(Leg)[2].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[7].temp = std::get<RS03_Vec>(Leg)[3].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].temp = std::get<RS03_Vec>(Leg)[0].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].temp = std::get<RS03_Vec>(Leg)[1].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].temp = std::get<RS03_Vec>(Leg)[2].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].temp = std::get<RS03_Vec>(Leg)[3].Feedback_param.temp.load(std::memory_order_relaxed);
 
-        fb_buf[8].temp = std::get<RS06_Vec>(Leg)[0].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[9].temp = std::get<RS06_Vec>(Leg)[1].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[10].temp = std::get<RS06_Vec>(Leg)[2].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[11].temp = std::get<RS06_Vec>(Leg)[3].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].temp = std::get<RS06_Vec>(Leg)[0].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].temp = std::get<RS06_Vec>(Leg)[1].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].temp = std::get<RS06_Vec>(Leg)[2].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].temp = std::get<RS06_Vec>(Leg)[3].Feedback_param.temp.load(std::memory_order_relaxed);
 
         shm_ptr->write_fb(fb_buf);
                                                                                                                                     // END FEEDBACKS

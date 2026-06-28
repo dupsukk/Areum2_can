@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -Iinc -Wall -Wextra -std=c++20 -O2 -MMD -MP
 LDFLAGS =
 
-TARGET = Areum2_can
+TARGET = tellus_can
 
 # Source and Object files
 SRC_DIR = src

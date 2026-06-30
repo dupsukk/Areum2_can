@@ -284,62 +284,62 @@ void* update_Control_params(void* args){
         double clamped_pos;
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].pos < MIN_POS_LEFT_HIP_PITCH ? MIN_POS_LEFT_HIP_PITCH
-                    : ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].pos > MAX_POS_LEFT_HIP_PITCH ? MAX_POS_LEFT_HIP_PITCH
+                    : fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].pos > MAX_POS_LEFT_HIP_PITCH ? MAX_POS_LEFT_HIP_PITCH
                     : ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_PITCH].pos;
         std::get<RS04_Vec>(Leg)[0].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // L HIP PITCH
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].pos < MIN_POS_RIGHT_HIP_PITCH ? MIN_POS_RIGHT_HIP_PITCH
-                    : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].pos > MAX_POS_RIGHT_HIP_PITCH ? MAX_POS_RIGHT_HIP_PITCH
+                    : fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].pos > MAX_POS_RIGHT_HIP_PITCH ? MAX_POS_RIGHT_HIP_PITCH
                     : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_PITCH].pos;
         std::get<RS04_Vec>(Leg)[1].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // R HIP PITCH
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].pos < MIN_POS_LEFT_KNEE_PITCH ? MIN_POS_LEFT_KNEE_PITCH
-                    : ctrl_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].pos > MAX_POS_LEFT_KNEE_PITCH ? MAX_POS_LEFT_KNEE_PITCH
+                    : fb_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].pos > MAX_POS_LEFT_KNEE_PITCH ? MAX_POS_LEFT_KNEE_PITCH
                     : ctrl_buf[SHM_MOTOR_INDEX_LEFT_KNEE_PITCH].pos;
         std::get<RS04_Vec>(Leg)[2].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // L KNEE PITCH
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].pos < MIN_POS_RIGHT_KNEE_PITCH ? MIN_POS_RIGHT_KNEE_PITCH
-                    : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].pos > MAX_POS_RIGHT_KNEE_PITCH ? MAX_POS_RIGHT_KNEE_PITCH
+                    : fb_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].pos > MAX_POS_RIGHT_KNEE_PITCH ? MAX_POS_RIGHT_KNEE_PITCH
                     : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_KNEE_PITCH].pos;
         std::get<RS04_Vec>(Leg)[3].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // R KNEE PITCH
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].pos < MIN_POS_LEFT_HIP_ROLL ? MIN_POS_LEFT_HIP_ROLL
-                    : ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].pos > MAX_POS_LEFT_HIP_ROLL ? MAX_POS_LEFT_HIP_ROLL
+                    : fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].pos > MAX_POS_LEFT_HIP_ROLL ? MAX_POS_LEFT_HIP_ROLL
                     : ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_ROLL].pos;
         std::get<RS03_Vec>(Leg)[0].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // L HIP ROLL
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].pos < MIN_POS_RIGHT_HIP_ROLL ? MIN_POS_RIGHT_HIP_ROLL
-                    : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].pos > MAX_POS_RIGHT_HIP_ROLL ? MAX_POS_RIGHT_HIP_ROLL
+                    : fb_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].pos > MAX_POS_RIGHT_HIP_ROLL ? MAX_POS_RIGHT_HIP_ROLL
                     : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_HIP_ROLL].pos;
         std::get<RS03_Vec>(Leg)[1].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // R HIP ROLL
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].pos < MIN_POS_LEFT_HIP_YAW ? MIN_POS_LEFT_HIP_YAW
-                    : ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].pos > MAX_POS_LEFT_HIP_YAW ? MAX_POS_LEFT_HIP_YAW
+                    : fb_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].pos > MAX_POS_LEFT_HIP_YAW ? MAX_POS_LEFT_HIP_YAW
                     : ctrl_buf[SHM_MOTOR_INDEX_LEFT_HIP_YAW].pos;
         std::get<RS03_Vec>(Leg)[2].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // L HIP YAW
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].pos < MIN_POS_RIGHT_HIP_YAW ? MIN_POS_RIGHT_HIP_YAW
-                    : ctrl_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].pos > MAX_POS_RIGHT_HIP_YAW ? MAX_POS_RIGHT_HIP_YAW
+                    : fb_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].pos > MAX_POS_RIGHT_HIP_YAW ? MAX_POS_RIGHT_HIP_YAW
                     : ctrl_buf[SHM_MOTOR_INDEX_IGHT_HIP_YAW].pos;
         std::get<RS03_Vec>(Leg)[3].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // R HIP YAW
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].pos < -2.0 ? -2.0
-                    : ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].pos > 2.0 ? 2.0
+                    : fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].pos > 2.0 ? 2.0
                     : ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_A].pos;
         std::get<RS06_Vec>(Leg)[0].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // L ANKLE A
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].pos < -2.0 ? -2.0
-                    : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].pos > 2.0 ? 2.0
+                    : fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].pos > 2.0 ? 2.0
                     : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_A].pos;
         std::get<RS06_Vec>(Leg)[1].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // R ANKLE A
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].pos < -2.0 ? -2.0
-                    : ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].pos > 2.0 ? 2.0
+                    : fb_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].pos > 2.0 ? 2.0
                     : ctrl_buf[SHM_MOTOR_INDEX_LEFT_ANKLE_B].pos;
         std::get<RS06_Vec>(Leg)[2].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // L ANKLE B
 
         clamped_pos = fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].pos < -2.0 ? -2.0
-                    : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].pos > 2.0 ? 2.0
+                    : fb_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].pos > 2.0 ? 2.0
                     : ctrl_buf[SHM_MOTOR_INDEX_RIGHT_ANKLE_B].pos;
         std::get<RS06_Vec>(Leg)[3].control_param.pos.store(clamped_pos, std::memory_order_relaxed);  // R ANKLE B
 

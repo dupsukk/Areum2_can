@@ -1,5 +1,6 @@
 # Build
 Areum2_can
+tellus_can
 *.o
 *.d
 
@@ -8,5 +9,10 @@ Areum2_can
 .DS_Store
 *.swp
 
-#log files 
-.log
+#log files
+*.log
+*.csv
+logs/
+
+# Python
+__pycache__/

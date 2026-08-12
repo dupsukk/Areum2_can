@@ -34,31 +34,31 @@
 #define SHM_MOTOR_INDEX_RIGHT_ANKLE_B     11
 
 //LEFT LEG LIMITS - deg 2 rad 
-constexpr double MAX_POS_LEFT_HIP_PITCH   = 130.0    *  M_PI/180;  
-constexpr double MIN_POS_LEFT_HIP_PITCH   = -80.0    *  M_PI/180;
-constexpr double MAX_POS_LEFT_HIP_ROLL    = 8        *  M_PI/180;
-constexpr double MIN_POS_LEFT_HIP_ROLL    = -90      *  M_PI/180;
-constexpr double MAX_POS_LEFT_HIP_YAW     = 90       *  M_PI/180;
-constexpr double MIN_POS_LEFT_HIP_YAW     = -90      *  M_PI/180;
-constexpr double MAX_POS_LEFT_KNEE_PITCH  = 0        *  M_PI/180;
-constexpr double MIN_POS_LEFT_KNEE_PITCH  = -110     *  M_PI/180;
-constexpr double MAX_POS_LEFT_ANKLE_A     = 65.5     *  M_PI/180;
-constexpr double MIN_POS_LEFT_ANKLE_A     = -41      *  M_PI/180;
-constexpr double MAX_POS_LEFT_ANKLE_B     = 41.5     *  M_PI/180;
-constexpr double MIN_POS_LEFT_ANKLE_B     = -65.5    *  M_PI/180;  // 부호 확인 필요 
+constexpr double MAX_POS_LEFT_HIP_PITCH   = 80.0    *  M_PI/180; //130 
+constexpr double MIN_POS_LEFT_HIP_PITCH   = -80.0    *  M_PI/180; //-80
+constexpr double MAX_POS_LEFT_HIP_ROLL    = 8        *  M_PI/180; //8
+constexpr double MIN_POS_LEFT_HIP_ROLL    = -15      *  M_PI/180; // 원래 -90
+constexpr double MAX_POS_LEFT_HIP_YAW     = 45       *  M_PI/180; //90
+constexpr double MIN_POS_LEFT_HIP_YAW     = -45      *  M_PI/180; //-90
+constexpr double MAX_POS_LEFT_KNEE_PITCH  = 0        *  M_PI/180; //0
+constexpr double MIN_POS_LEFT_KNEE_PITCH  = -90     *  M_PI/180; //-110
+constexpr double MAX_POS_LEFT_ANKLE_A     = 65.5     *  M_PI/180; //65.5
+constexpr double MIN_POS_LEFT_ANKLE_A     = -41      *  M_PI/180; //-41
+constexpr double MAX_POS_LEFT_ANKLE_B     = 41.5     *  M_PI/180; //41.5
+constexpr double MIN_POS_LEFT_ANKLE_B     = -65.5    *  M_PI/180; //-65.5 부호 확인 필요 
 
 //RIGHT LEG LIMITS - deg 2 rad
-constexpr double MAX_POS_RIGHT_HIP_PITCH   = 80.0     *  M_PI/180;  
-constexpr double MIN_POS_RIGHT_HIP_PITCH   = -130.0   *  M_PI/180;
-constexpr double MAX_POS_RIGHT_HIP_ROLL    = 90       *  M_PI/180;
-constexpr double MIN_POS_RIGHT_HIP_ROLL    = -8       *  M_PI/180;
-constexpr double MAX_POS_RIGHT_HIP_YAW     = 90       *  M_PI/180;
-constexpr double MIN_POS_RIGHT_HIP_YAW     = -90      *  M_PI/180;
-constexpr double MAX_POS_RIGHT_KNEE_PITCH  = 110      *  M_PI/180;
-constexpr double MIN_POS_RIGHT_KNEE_PITCH  = 0        *  M_PI/180; 
-constexpr double MAX_POS_RIGHT_ANKLE_A     = 0        *  M_PI/180;
-constexpr double MIN_POS_RIGHT_ANKLE_A     = 65.5     *  M_PI/180;
-constexpr double MAX_POS_RIGHT_ANKLE_B     = 41.0     *  M_PI/180;
-constexpr double MIN_POS_RIGHT_ANKLE_B     = -65.5    *  M_PI/180;  // 부호 확인 필요 
+constexpr double MAX_POS_RIGHT_HIP_PITCH   = 80.0     *  M_PI/180; //80
+constexpr double MIN_POS_RIGHT_HIP_PITCH   = -80.0   *  M_PI/180; //-130
+constexpr double MAX_POS_RIGHT_HIP_ROLL    = 25       *  M_PI/180; //원래 90 
+constexpr double MIN_POS_RIGHT_HIP_ROLL    = -8       *  M_PI/180; //-8
+constexpr double MAX_POS_RIGHT_HIP_YAW     = 45       *  M_PI/180; //90
+constexpr double MIN_POS_RIGHT_HIP_YAW     = -45      *  M_PI/180; //-90
+constexpr double MAX_POS_RIGHT_KNEE_PITCH  = 90      *  M_PI/180; //110
+constexpr double MIN_POS_RIGHT_KNEE_PITCH  = 0        *  M_PI/180; //0
+constexpr double MAX_POS_RIGHT_ANKLE_A     = 0        *  M_PI/180; //0
+constexpr double MIN_POS_RIGHT_ANKLE_A     = 65.5     *  M_PI/180; //65.5
+constexpr double MAX_POS_RIGHT_ANKLE_B     = 41.0     *  M_PI/180; //41
+constexpr double MIN_POS_RIGHT_ANKLE_B     = -65.5    *  M_PI/180; //-65.5 부호 확인 필요 
 
 #endif

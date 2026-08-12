@@ -21,7 +21,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-#include "Areum2.hpp"
+#include "AReuMii.h"
 #include "utils.hpp"
 //#include "Sharemem.hpp"
 
@@ -33,6 +33,7 @@ constexpr uint16_t PARAM_MODE = 0x7005;
 constexpr uint32_t COMM_OPERATION_CONTROL = 1;
 constexpr uint16_t PARAM_VELOCITY_LIMIT = 0x7017;
 constexpr uint16_t PARAM_TORQUE_LIMIT = 0x700B;           
+constexpr uint32_t COMM_STOP   = 4;
 
 enum class RobstrideMotor_type {RS00 = 0, RS01 =1 , RS02 =2 , RS03 = 3, RS04= 4, RS05 =5, RS06=6, EL05 = 7};
 
@@ -242,9 +243,9 @@ class RobstrideMotor {
     }
     
     /**
-     * @brief Read a CAN frame (with timeout)
+     * @brief Read a CAN frame (with timeout) 
      */
-    bool read_frame(int s, struct can_frame* frame) {             
+    bool read_frame(int s, struct can_frame* frame) {             // 사실 이거 안 씀 ㅋㅋ 
         // Set 100ms timeout
         struct timeval tv;
         tv.tv_sec = 0;
@@ -274,6 +275,19 @@ class RobstrideMotor {
     bool enable_motor() {
         uint32_t ext_id = (COMM_ENABLE << 24) | (HOST_ID << 8) | can_id;
         return send_frame( ext_id, nullptr, 0);
+    }
+
+    bool stop_motor() {
+        uint8_t data[8] = {0};
+        uint32_t ext_id = (COMM_STOP << 24) | (HOST_ID << 8) | can_id;
+        return send_frame(ext_id, data, 8);
+    }
+
+    bool clear_fault() {
+        uint8_t data[8] = {0};
+        data[0] = 0x01;  // Type4 Byte0=1: fault clear
+        uint32_t ext_id = (COMM_STOP << 24) | (HOST_ID << 8) | can_id;
+        return send_frame(ext_id, data, 8);
     }
     
     bool set_mode_raw(int8_t mode) {
@@ -389,6 +403,8 @@ class RobstrideMotor {
     
     bool init_motor_MIT(float vel_lim, float torque_lim){
         try{
+            clear_fault();
+            usleep(1000);
             enable_motor();
             usleep(1000);
             set_mode_raw(0);
@@ -399,11 +415,18 @@ class RobstrideMotor {
 
             return true;
         }catch(const std::exception& e){
-
-            // 모터를 끄는 로직이 들어갑시다 
+            stop_motor();
             return false;
         }
+    }
 
+    void restart_motor_MIT(float vel_lim, float torque_lim){
+        stop_motor();
+        clear_fault();
+        enable_motor();
+        set_mode_raw(0);
+        write_limit(PARAM_VELOCITY_LIMIT, vel_lim);
+        write_limit(PARAM_TORQUE_LIMIT, torque_lim);
     }
 
 

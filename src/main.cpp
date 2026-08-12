@@ -10,14 +10,30 @@
 
 
 const char* CAN_INTERFACE_0 = "can0";
+const char* CAN_INTERFACE_1 = "can1";
 bool running = true;
 constexpr long CONTROL_PERIOD = 2'500'000;
-constexpr int MaxID = 32;
+constexpr int MaxID = 34;
+constexpr int MOTOR_NUM = 16;
 
 Motor_con AReuMii;
 
 
-void signal_handler(int signum) { running = false; }
+void signal_handler(int signum) { 
+    running = false;
+    std::apply([](auto&... vecs) {
+        (..., [](auto& vec) {
+            for (auto& motor : vec) {
+                motor.write_operation_frame(0, 0, 0);
+                motor.control_param.pos = 0;
+                motor.control_param.Kp = 0;
+                motor.control_param.Kd = 0;
+                motor.stop_motor();//motor.clear_fault();usleep(100);
+        }
+        }(vecs));
+    }, AReuMii);
+}
+
 
 void* print_thread_func(void*) {
     while (running) {
@@ -106,11 +122,30 @@ void* CAN_Comm_thread(void* arg) {  // TODO : 캘리브레이션을 위한 로�
 
 void* update_Control_params(void* args){
 
-    Control_Shm<4> ctrl_shm(13563267);
+    Control_Shm<MOTOR_NUM> ctrl_shm(13563267);
     auto* shm_ptr = ctrl_shm.get();
 
-    Control_param ctrl_buf[4];
-    Feedback_Param fb_buf[4];
+    Control_param ctrl_buf[MOTOR_NUM];
+    Feedback_Param fb_buf[MOTOR_NUM];
+
+    std::get<RS02_Vec>(AReuMii)[0].control_param.Kp.store(3, std::memory_order_relaxed);  
+    std::get<RS02_Vec>(AReuMii)[1].control_param.Kp.store(3, std::memory_order_relaxed);  
+    std::get<RS00_Vec>(AReuMii)[0].control_param.Kp.store(3, std::memory_order_relaxed);  
+    std::get<RS00_Vec>(AReuMii)[1].control_param.Kp.store(3, std::memory_order_relaxed);  
+
+    std::get<EL05_Vec>(AReuMii)[0].control_param.Kp.store(3, std::memory_order_relaxed);  
+    std::get<EL05_Vec>(AReuMii)[1].control_param.Kp.store(3, std::memory_order_relaxed);  
+    std::get<EL05_Vec>(AReuMii)[2].control_param.Kp.store(3, std::memory_order_relaxed);  
+
+
+    std::get<RS02_Vec>(AReuMii)[0].control_param.Kd.store(1, std::memory_order_relaxed);  
+    std::get<RS02_Vec>(AReuMii)[1].control_param.Kd.store(1, std::memory_order_relaxed);  
+    std::get<RS00_Vec>(AReuMii)[0].control_param.Kd.store(1, std::memory_order_relaxed);  
+    std::get<RS00_Vec>(AReuMii)[1].control_param.Kd.store(1, std::memory_order_relaxed);  
+
+    std::get<EL05_Vec>(AReuMii)[0].control_param.Kd.store(1, std::memory_order_relaxed);  
+    std::get<EL05_Vec>(AReuMii)[1].control_param.Kd.store(1, std::memory_order_relaxed);  
+    std::get<EL05_Vec>(AReuMii)[2].control_param.Kd.store(1, std::memory_order_relaxed);  
     
 
     while(running){
@@ -121,37 +156,107 @@ void* update_Control_params(void* args){
         std::get<RS00_Vec>(AReuMii)[0].control_param.pos.store(std::clamp(ctrl_buf[2].pos, -2.0, 2.0), std::memory_order_relaxed);
         std::get<RS00_Vec>(AReuMii)[1].control_param.pos.store(std::clamp(ctrl_buf[3].pos, -2.0, 2.0), std::memory_order_relaxed);
 
-        std::get<RS02_Vec>(AReuMii)[0].control_param.Kp.store(ctrl_buf[0].Kp, std::memory_order_relaxed);  
-        std::get<RS02_Vec>(AReuMii)[1].control_param.Kp.store(ctrl_buf[1].Kp, std::memory_order_relaxed);  
-        std::get<RS00_Vec>(AReuMii)[0].control_param.Kp.store(ctrl_buf[2].Kp, std::memory_order_relaxed);  
-        std::get<RS00_Vec>(AReuMii)[1].control_param.Kp.store(ctrl_buf[3].Kp, std::memory_order_relaxed);  
+        std::get<EL05_Vec>(AReuMii)[0].control_param.pos.store(std::clamp(ctrl_buf[4].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[1].control_param.pos.store(std::clamp(ctrl_buf[5].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[2].control_param.pos.store(std::clamp(ctrl_buf[6].pos, -2.0, 2.0), std::memory_order_relaxed);
 
-        std::get<RS02_Vec>(AReuMii)[0].control_param.Kd.store(ctrl_buf[0].Kd, std::memory_order_relaxed);  
-        std::get<RS02_Vec>(AReuMii)[1].control_param.Kd.store(ctrl_buf[1].Kd, std::memory_order_relaxed);  
-        std::get<RS00_Vec>(AReuMii)[0].control_param.Kd.store(ctrl_buf[2].Kd, std::memory_order_relaxed);  
-        std::get<RS00_Vec>(AReuMii)[1].control_param.Kd.store(ctrl_buf[3].Kd, std::memory_order_relaxed);  
 
-        
+        std::get<RS02_Vec>(AReuMii)[0].control_param.vel.store(ctrl_buf[0].vel, std::memory_order_relaxed);  // 라디안임.
+        std::get<RS02_Vec>(AReuMii)[1].control_param.vel.store(ctrl_buf[1].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<RS00_Vec>(AReuMii)[0].control_param.vel.store(ctrl_buf[2].vel,  std::memory_order_relaxed);
+        std::get<RS00_Vec>(AReuMii)[1].control_param.vel.store(ctrl_buf[3].vel, std::memory_order_relaxed);
+
+        std::get<EL05_Vec>(AReuMii)[0].control_param.vel.store(ctrl_buf[4].vel, std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[1].control_param.vel.store(ctrl_buf[5].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[2].control_param.vel.store(ctrl_buf[6].vel, std::memory_order_relaxed);
+
+
+        std::get<RS02_Vec>(AReuMii)[2].control_param.pos.store(std::clamp(ctrl_buf[8].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
+        std::get<RS02_Vec>(AReuMii)[3].control_param.pos.store(std::clamp(ctrl_buf[9].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<RS00_Vec>(AReuMii)[2].control_param.pos.store(std::clamp(ctrl_buf[10].pos, -2.0, 2.0), std::memory_order_relaxed);
+        std::get<RS00_Vec>(AReuMii)[3].control_param.pos.store(std::clamp(ctrl_buf[11].pos, -2.0, 2.0), std::memory_order_relaxed);
+
+        std::get<EL05_Vec>(AReuMii)[3].control_param.pos.store(std::clamp(ctrl_buf[12].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[4].control_param.pos.store(std::clamp(ctrl_buf[13].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[5].control_param.pos.store(std::clamp(ctrl_buf[14].pos, -2.0, 2.0), std::memory_order_relaxed);
+
+
+        std::get<RS02_Vec>(AReuMii)[2].control_param.vel.store(ctrl_buf[8].vel, std::memory_order_relaxed);  // 라디안임.
+        std::get<RS02_Vec>(AReuMii)[3].control_param.vel.store(ctrl_buf[9].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<RS00_Vec>(AReuMii)[2].control_param.vel.store(ctrl_buf[10].vel,  std::memory_order_relaxed);
+        std::get<RS00_Vec>(AReuMii)[3].control_param.vel.store(ctrl_buf[11].vel, std::memory_order_relaxed);
+
+        std::get<EL05_Vec>(AReuMii)[3].control_param.vel.store(ctrl_buf[12].vel, std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[4].control_param.vel.store(ctrl_buf[13].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[5].control_param.vel.store(ctrl_buf[14].vel, std::memory_order_relaxed);
+
+
+
 
         fb_buf[0].pos = std::get<RS02_Vec>(AReuMii)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[0].pos_offset;
         fb_buf[1].pos = std::get<RS02_Vec>(AReuMii)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[1].pos_offset;
         fb_buf[2].pos = std::get<RS00_Vec>(AReuMii)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[0].pos_offset;
         fb_buf[3].pos = std::get<RS00_Vec>(AReuMii)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[1].pos_offset;
+        
+        fb_buf[4].pos = std::get<EL05_Vec>(AReuMii)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[0].pos_offset;
+        fb_buf[5].pos = std::get<EL05_Vec>(AReuMii)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[1].pos_offset;
+        fb_buf[6].pos = std::get<EL05_Vec>(AReuMii)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[2].pos_offset;
+
 
         fb_buf[0].vel = std::get<RS02_Vec>(AReuMii)[0].Feedback_param.vel.load(std::memory_order_relaxed);
         fb_buf[1].vel = std::get<RS02_Vec>(AReuMii)[1].Feedback_param.vel.load(std::memory_order_relaxed);
         fb_buf[2].vel = std::get<RS00_Vec>(AReuMii)[0].Feedback_param.vel.load(std::memory_order_relaxed);
         fb_buf[3].vel = std::get<RS00_Vec>(AReuMii)[1].Feedback_param.vel.load(std::memory_order_relaxed);
+        
+        fb_buf[4].vel = std::get<EL05_Vec>(AReuMii)[0].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[5].vel = std::get<EL05_Vec>(AReuMii)[1].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[6].vel = std::get<EL05_Vec>(AReuMii)[2].Feedback_param.vel.load(std::memory_order_relaxed);
+
 
         fb_buf[0].torque = std::get<RS02_Vec>(AReuMii)[0].Feedback_param.torque.load(std::memory_order_relaxed);
         fb_buf[1].torque = std::get<RS02_Vec>(AReuMii)[1].Feedback_param.torque.load(std::memory_order_relaxed);
         fb_buf[2].torque = std::get<RS00_Vec>(AReuMii)[0].Feedback_param.torque.load(std::memory_order_relaxed);
         fb_buf[3].torque = std::get<RS00_Vec>(AReuMii)[1].Feedback_param.torque.load(std::memory_order_relaxed);
 
-        fb_buf[0].temp = std::get<RS02_Vec>(AReuMii)[0].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[1].temp = std::get<RS02_Vec>(AReuMii)[1].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[2].temp = std::get<RS00_Vec>(AReuMii)[0].Feedback_param.temp.load(std::memory_order_relaxed);
-        fb_buf[3].temp = std::get<RS00_Vec>(AReuMii)[1].Feedback_param.temp.load(std::memory_order_relaxed);
+        fb_buf[4].torque = std::get<EL05_Vec>(AReuMii)[0].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[5].torque = std::get<EL05_Vec>(AReuMii)[1].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[6].torque = std::get<EL05_Vec>(AReuMii)[2].Feedback_param.torque.load(std::memory_order_relaxed);
+
+
+        fb_buf[8].pos = std::get<RS02_Vec>(AReuMii)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[2].pos_offset;
+        fb_buf[9].pos = std::get<RS02_Vec>(AReuMii)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[3].pos_offset;
+        fb_buf[10].pos = std::get<RS00_Vec>(AReuMii)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[2].pos_offset;
+        fb_buf[11].pos = std::get<RS00_Vec>(AReuMii)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[3].pos_offset;
+        
+        fb_buf[12].pos = std::get<EL05_Vec>(AReuMii)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[3].pos_offset;
+        fb_buf[13].pos = std::get<EL05_Vec>(AReuMii)[4].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[4].pos_offset;
+        fb_buf[14].pos = std::get<EL05_Vec>(AReuMii)[5].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[5].pos_offset;
+
+
+        fb_buf[8].vel = std::get<RS02_Vec>(AReuMii)[2].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[9].vel = std::get<RS02_Vec>(AReuMii)[3].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[10].vel = std::get<RS00_Vec>(AReuMii)[2].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[11].vel = std::get<RS00_Vec>(AReuMii)[3].Feedback_param.vel.load(std::memory_order_relaxed);
+        
+        fb_buf[12].vel = std::get<EL05_Vec>(AReuMii)[3].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[13].vel = std::get<EL05_Vec>(AReuMii)[4].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[14].vel = std::get<EL05_Vec>(AReuMii)[5].Feedback_param.vel.load(std::memory_order_relaxed);
+
+
+        fb_buf[8].torque = std::get<RS02_Vec>(AReuMii)[2].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[9].torque = std::get<RS02_Vec>(AReuMii)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[10].torque = std::get<RS00_Vec>(AReuMii)[2].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[11].torque = std::get<RS00_Vec>(AReuMii)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+
+        fb_buf[12].torque = std::get<EL05_Vec>(AReuMii)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[13].torque = std::get<EL05_Vec>(AReuMii)[4].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[14].torque = std::get<EL05_Vec>(AReuMii)[5].Feedback_param.torque.load(std::memory_order_relaxed);
+
+
+        // fb_buf[0].temp = std::get<RS02_Vec>(AReuMii)[0].Feedback_param.temp.load(std::memory_order_relaxed);
+        // fb_buf[1].temp = std::get<RS02_Vec>(AReuMii)[1].Feedback_param.temp.load(std::memory_order_relaxed);
+        // fb_buf[2].temp = std::get<RS00_Vec>(AReuMii)[0].Feedback_param.temp.load(std::memory_order_relaxed);
+        // fb_buf[3].temp = std::get<RS00_Vec>(AReuMii)[1].Feedback_param.temp.load(std::memory_order_relaxed);
         shm_ptr->write_fb(fb_buf);
 
        usleep(1000);
@@ -169,18 +274,34 @@ int main() {
     int s1 = init_can(CAN_INTERFACE_0);
     if (s1 < 0) return -1;
 
+    int s2 = init_can(CAN_INTERFACE_1);
+    if (s2 < 0) return -1;
 
-    std::vector<int> can_interface = {s1};
+    std::vector<int> can_interface = {s1 , s2};
 
     std::get<RS02_Vec>(AReuMii).emplace_back(s1, CAN_ID_LEFT_SHOULDER_PITCH);
     std::get<RS02_Vec>(AReuMii).emplace_back(s1, CAN_ID_LEFT_SHOULDER_ROLL);
     std::get<RS00_Vec>(AReuMii).emplace_back(s1, CAN_ID_LEFT_SHOULDER_YAW);
     std::get<RS00_Vec>(AReuMii).emplace_back(s1, CAN_ID_LEFT_ELBOW);
 
+    std::get<EL05_Vec>(AReuMii).emplace_back(s1, CAN_ID_LEFT_WRIST_ROLL);
+    std::get<EL05_Vec>(AReuMii).emplace_back(s1, CAN_ID_LEFT_WRIST_YAW);
+    std::get<EL05_Vec>(AReuMii).emplace_back(s1, CAN_ID_LEFT_WRIST_PITCH);
+
+
+    std::get<RS02_Vec>(AReuMii).emplace_back(s2, CAN_ID_RIGHT_SHOULDER_PITCH);
+    std::get<RS02_Vec>(AReuMii).emplace_back(s2, CAN_ID_RIGHT_SHOULDER_ROLL);
+    std::get<RS00_Vec>(AReuMii).emplace_back(s2, CAN_ID_RIGHT_SHOULDER_YAW);
+    std::get<RS00_Vec>(AReuMii).emplace_back(s2, CAN_ID_RIGHT_ELBOW);
+
+    std::get<EL05_Vec>(AReuMii).emplace_back(s2, CAN_ID_RIGHT_WRIST_ROLL);
+    std::get<EL05_Vec>(AReuMii).emplace_back(s2, CAN_ID_RIGHT_WRIST_YAW);
+    std::get<EL05_Vec>(AReuMii).emplace_back(s2, CAN_ID_RIGHT_WRIST_PITCH);
+
 
     std::apply([](auto&... vecs) {
         (..., [](auto& vec) {
-            for (auto& motor : vec) motor.init_motor_MIT(1, 3);
+            for (auto& motor : vec) motor.init_motor_MIT(10, 10);
         }(vecs));
     }, AReuMii);
 

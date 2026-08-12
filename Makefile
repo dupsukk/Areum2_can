@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -Iinc -Wall -Wextra -std=c++20 -O2 -MMD -MP
-LDFLAGS = lpthread
+LDFLAGS = -lpthread
 
 TARGET = Areum2_can
 

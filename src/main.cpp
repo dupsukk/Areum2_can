@@ -151,106 +151,106 @@ void* update_Control_params(void* args){
     while(running){
         while (!shm_ptr->try_read_ctrl(ctrl_buf));  // torn read면 재시도
 
-        std::get<RS02_Vec>(AReuMii)[0].control_param.pos.store(std::clamp(ctrl_buf[0].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
-        std::get<RS02_Vec>(AReuMii)[1].control_param.pos.store(std::clamp(ctrl_buf[1].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<RS00_Vec>(AReuMii)[0].control_param.pos.store(std::clamp(ctrl_buf[2].pos, -2.0, 2.0), std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[1].control_param.pos.store(std::clamp(ctrl_buf[3].pos, -2.0, 2.0), std::memory_order_relaxed);
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_YAW].pos, -2.0, 2.0), std::memory_order_relaxed);
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);
 
-        std::get<EL05_Vec>(AReuMii)[0].control_param.pos.store(std::clamp(ctrl_buf[4].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
-        std::get<EL05_Vec>(AReuMii)[1].control_param.pos.store(std::clamp(ctrl_buf[5].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<EL05_Vec>(AReuMii)[2].control_param.pos.store(std::clamp(ctrl_buf[6].pos, -2.0, 2.0), std::memory_order_relaxed);
-
-
-        std::get<RS02_Vec>(AReuMii)[0].control_param.vel.store(ctrl_buf[0].vel, std::memory_order_relaxed);  // 라디안임.
-        std::get<RS02_Vec>(AReuMii)[1].control_param.vel.store(ctrl_buf[1].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<RS00_Vec>(AReuMii)[0].control_param.vel.store(ctrl_buf[2].vel,  std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[1].control_param.vel.store(ctrl_buf[3].vel, std::memory_order_relaxed);
-
-        std::get<EL05_Vec>(AReuMii)[0].control_param.vel.store(ctrl_buf[4].vel, std::memory_order_relaxed);  // 라디안임.
-        std::get<EL05_Vec>(AReuMii)[1].control_param.vel.store(ctrl_buf[5].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<EL05_Vec>(AReuMii)[2].control_param.vel.store(ctrl_buf[6].vel, std::memory_order_relaxed);
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_WRIST_ROLL].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_WRIST_YAW].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_WRIST_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);
 
 
-        std::get<RS02_Vec>(AReuMii)[2].control_param.pos.store(std::clamp(ctrl_buf[8].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
-        std::get<RS02_Vec>(AReuMii)[3].control_param.pos.store(std::clamp(ctrl_buf[9].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<RS00_Vec>(AReuMii)[2].control_param.pos.store(std::clamp(ctrl_buf[10].pos, -2.0, 2.0), std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[3].control_param.pos.store(std::clamp(ctrl_buf[11].pos, -2.0, 2.0), std::memory_order_relaxed);
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].vel, std::memory_order_relaxed);  // 라디안임.
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_YAW].vel,  std::memory_order_relaxed);
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].vel, std::memory_order_relaxed);
 
-        std::get<EL05_Vec>(AReuMii)[3].control_param.pos.store(std::clamp(ctrl_buf[12].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
-        std::get<EL05_Vec>(AReuMii)[4].control_param.pos.store(std::clamp(ctrl_buf[13].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<EL05_Vec>(AReuMii)[5].control_param.pos.store(std::clamp(ctrl_buf[14].pos, -2.0, 2.0), std::memory_order_relaxed);
-
-
-        std::get<RS02_Vec>(AReuMii)[2].control_param.vel.store(ctrl_buf[8].vel, std::memory_order_relaxed);  // 라디안임.
-        std::get<RS02_Vec>(AReuMii)[3].control_param.vel.store(ctrl_buf[9].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<RS00_Vec>(AReuMii)[2].control_param.vel.store(ctrl_buf[10].vel,  std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[3].control_param.vel.store(ctrl_buf[11].vel, std::memory_order_relaxed);
-
-        std::get<EL05_Vec>(AReuMii)[3].control_param.vel.store(ctrl_buf[12].vel, std::memory_order_relaxed);  // 라디안임.
-        std::get<EL05_Vec>(AReuMii)[4].control_param.vel.store(ctrl_buf[13].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<EL05_Vec>(AReuMii)[5].control_param.vel.store(ctrl_buf[14].vel, std::memory_order_relaxed);
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_ROLL].vel, std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_YAW].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_PITCH].vel, std::memory_order_relaxed);
 
 
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].pos, -2.0, 2.0), std::memory_order_relaxed);
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);
+
+        std::get<EL05_Vec>(AReuMii)[3].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_WRIST_ROLL].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[4].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_WRIST_YAW].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[5].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_WRIST_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);
 
 
-        fb_buf[0].pos = std::get<RS02_Vec>(AReuMii)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[0].pos_offset;
-        fb_buf[1].pos = std::get<RS02_Vec>(AReuMii)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[1].pos_offset;
-        fb_buf[2].pos = std::get<RS00_Vec>(AReuMii)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[0].pos_offset;
-        fb_buf[3].pos = std::get<RS00_Vec>(AReuMii)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[1].pos_offset;
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].vel, std::memory_order_relaxed);  // 라디안임.
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].vel,  std::memory_order_relaxed);
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].vel, std::memory_order_relaxed);
+
+        std::get<EL05_Vec>(AReuMii)[3].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_ROLL].vel, std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[4].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_YAW].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[5].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_PITCH].vel, std::memory_order_relaxed);
+
+
+
+
+        fb_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].pos = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].pos_offset;
+        fb_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].pos = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].pos_offset;
+        fb_buf[SHM_INDEX_LEFT_SHOULDER_YAW].pos = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].pos_offset;
+        fb_buf[SHM_INDEX_LEFT_ELBOW_PITCH].pos = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].pos_offset;
         
-        fb_buf[4].pos = std::get<EL05_Vec>(AReuMii)[0].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[0].pos_offset;
-        fb_buf[5].pos = std::get<EL05_Vec>(AReuMii)[1].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[1].pos_offset;
-        fb_buf[6].pos = std::get<EL05_Vec>(AReuMii)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[2].pos_offset;
+        fb_buf[SHM_INDEX_LEFT_WRIST_ROLL].pos = std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].pos_offset;
+        fb_buf[SHM_INDEX_LEFT_WRIST_YAW].pos = std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].pos_offset;
+        fb_buf[SHM_INDEX_LEFT_WRIST_PITCH].pos = std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].pos_offset;
 
 
-        fb_buf[0].vel = std::get<RS02_Vec>(AReuMii)[0].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[1].vel = std::get<RS02_Vec>(AReuMii)[1].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[2].vel = std::get<RS00_Vec>(AReuMii)[0].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[3].vel = std::get<RS00_Vec>(AReuMii)[1].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].vel = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].vel = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_SHOULDER_YAW].vel = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_ELBOW_PITCH].vel = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].Feedback_param.vel.load(std::memory_order_relaxed);
         
-        fb_buf[4].vel = std::get<EL05_Vec>(AReuMii)[0].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[5].vel = std::get<EL05_Vec>(AReuMii)[1].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[6].vel = std::get<EL05_Vec>(AReuMii)[2].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_WRIST_ROLL].vel = std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_WRIST_YAW].vel = std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_WRIST_PITCH].vel = std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].Feedback_param.vel.load(std::memory_order_relaxed);
 
 
-        fb_buf[0].torque = std::get<RS02_Vec>(AReuMii)[0].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[1].torque = std::get<RS02_Vec>(AReuMii)[1].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[2].torque = std::get<RS00_Vec>(AReuMii)[0].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[3].torque = std::get<RS00_Vec>(AReuMii)[1].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].torque = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].torque = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_SHOULDER_YAW].torque = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_ELBOW_PITCH].torque = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].Feedback_param.torque.load(std::memory_order_relaxed);
 
-        fb_buf[4].torque = std::get<EL05_Vec>(AReuMii)[0].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[5].torque = std::get<EL05_Vec>(AReuMii)[1].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[6].torque = std::get<EL05_Vec>(AReuMii)[2].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_WRIST_ROLL].torque = std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_WRIST_YAW].torque = std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_LEFT_WRIST_PITCH].torque = std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].Feedback_param.torque.load(std::memory_order_relaxed);
 
 
-        fb_buf[8].pos = std::get<RS02_Vec>(AReuMii)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[2].pos_offset;
-        fb_buf[9].pos = std::get<RS02_Vec>(AReuMii)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[3].pos_offset;
-        fb_buf[10].pos = std::get<RS00_Vec>(AReuMii)[2].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[2].pos_offset;
-        fb_buf[11].pos = std::get<RS00_Vec>(AReuMii)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[3].pos_offset;
+        fb_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].pos = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].pos_offset;
+        fb_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].pos = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].pos_offset;
+        fb_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].pos = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].pos_offset;
+        fb_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].pos = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].pos_offset;
         
-        fb_buf[12].pos = std::get<EL05_Vec>(AReuMii)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS02_Vec>(AReuMii)[3].pos_offset;
-        fb_buf[13].pos = std::get<EL05_Vec>(AReuMii)[4].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[4].pos_offset;
-        fb_buf[14].pos = std::get<EL05_Vec>(AReuMii)[5].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<RS00_Vec>(AReuMii)[5].pos_offset;
+        fb_buf[SHM_INDEX_RIGHT_WRIST_ROLL].pos = std::get<EL05_Vec>(AReuMii)[3].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<EL05_Vec>(AReuMii)[3].pos_offset;
+        fb_buf[SHM_INDEX_RIGHT_WRIST_YAW].pos = std::get<EL05_Vec>(AReuMii)[4].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<EL05_Vec>(AReuMii)[4].pos_offset;
+        fb_buf[SHM_INDEX_RIGHT_WRIST_PITCH].pos = std::get<EL05_Vec>(AReuMii)[5].Feedback_param.pos.load(std::memory_order_relaxed)+std::get<EL05_Vec>(AReuMii)[5].pos_offset;
 
 
-        fb_buf[8].vel = std::get<RS02_Vec>(AReuMii)[2].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[9].vel = std::get<RS02_Vec>(AReuMii)[3].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[10].vel = std::get<RS00_Vec>(AReuMii)[2].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[11].vel = std::get<RS00_Vec>(AReuMii)[3].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].vel = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].vel = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].vel = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].vel = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].Feedback_param.vel.load(std::memory_order_relaxed);
         
-        fb_buf[12].vel = std::get<EL05_Vec>(AReuMii)[3].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[13].vel = std::get<EL05_Vec>(AReuMii)[4].Feedback_param.vel.load(std::memory_order_relaxed);
-        fb_buf[14].vel = std::get<EL05_Vec>(AReuMii)[5].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_WRIST_ROLL].vel = std::get<EL05_Vec>(AReuMii)[3].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_WRIST_YAW].vel = std::get<EL05_Vec>(AReuMii)[4].Feedback_param.vel.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_WRIST_PITCH].vel = std::get<EL05_Vec>(AReuMii)[5].Feedback_param.vel.load(std::memory_order_relaxed);
 
 
-        fb_buf[8].torque = std::get<RS02_Vec>(AReuMii)[2].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[9].torque = std::get<RS02_Vec>(AReuMii)[3].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[10].torque = std::get<RS00_Vec>(AReuMii)[2].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[11].torque = std::get<RS00_Vec>(AReuMii)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].torque = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].torque = std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].torque = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].torque = std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].Feedback_param.torque.load(std::memory_order_relaxed);
 
-        fb_buf[12].torque = std::get<EL05_Vec>(AReuMii)[3].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[13].torque = std::get<EL05_Vec>(AReuMii)[4].Feedback_param.torque.load(std::memory_order_relaxed);
-        fb_buf[14].torque = std::get<EL05_Vec>(AReuMii)[5].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_WRIST_ROLL].torque = std::get<EL05_Vec>(AReuMii)[3].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_WRIST_YAW].torque = std::get<EL05_Vec>(AReuMii)[4].Feedback_param.torque.load(std::memory_order_relaxed);
+        fb_buf[SHM_INDEX_RIGHT_WRIST_PITCH].torque = std::get<EL05_Vec>(AReuMii)[5].Feedback_param.torque.load(std::memory_order_relaxed);
 
 
         // fb_buf[0].temp = std::get<RS02_Vec>(AReuMii)[0].Feedback_param.temp.load(std::memory_order_relaxed);

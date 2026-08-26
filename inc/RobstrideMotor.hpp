@@ -21,7 +21,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-#include "AReuMii.h"
+#include "AReuMii_config.h"
 #include "utils.hpp"
 //#include "Sharemem.hpp"
 

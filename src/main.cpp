@@ -3,7 +3,6 @@
 #include "Sharemem.hpp"
 #include <signal.h>
 #include <vector>
-#include <type_traits>
 #include <iostream>
 
 #include <fcntl.h>
@@ -119,14 +118,9 @@ void* CAN_Comm_thread(void* arg) {  // TODO : 캘리브레이션을 위한 로�
         // 그리퍼를 뺀 나머지 축은 매 주기 전송
         std::apply([](auto&... vecs) {
             (..., [](auto& vec) {
-                using V = std::decay_t<decltype(vec)>;
-                if constexpr (std::is_same_v<V, EL05_Vec>) {
-                    for (int i = 0; i < (int)vec.size(); ++i) {
-                        if (i == VEC_INDEX_LEFT_GRIPPER || i == VEC_INDEX_RIGHT_GRIPPER) continue;
-                        vec[i].write_updated_operation_frame();
-                    }
-                } else {
-                    for (auto& motor : vec) motor.write_updated_operation_frame();
+                for (auto& motor : vec) {
+                    if (motor.can_id == CAN_ID_LEFT_EE || motor.can_id == CAN_ID_RIGHT_EE) continue;
+                    motor.write_updated_operation_frame();
                 }
             }(vecs));
         }, AReuMii);
@@ -210,6 +204,12 @@ void* update_Control_params(void* args){
     std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_YAW].control_param.Kd.store(1, std::memory_order_relaxed);
     std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_PITCH].control_param.Kd.store(1, std::memory_order_relaxed);
     std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_GRIPPER].control_param.Kd.store(1, std::memory_order_relaxed);
+
+
+    ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].pos = -1.5;
+    ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].pos = 1.5;
+
+    shm_ptr->write_ctrl(ctrl_buf);
 
 
     while(running){
@@ -419,7 +419,7 @@ int main() {
 
     std::apply([](auto&... vecs) {
         (..., [](auto& vec) {
-            for (auto& motor : vec) motor.init_motor_MIT(10, 10);
+            for (auto& motor : vec) motor.init_motor_MIT(1, 1);
         }(vecs));
     }, AReuMii);
 

@@ -12,9 +12,19 @@
 const char* CAN_INTERFACE_0 = "can0";
 const char* CAN_INTERFACE_1 = "can1";
 bool running = true;
-constexpr long CONTROL_PERIOD = 2'500'000;
+constexpr long CONTROL_PERIOD =3'000'000;
 constexpr int MaxID = 34;
 constexpr int MOTOR_NUM = 16;
+
+// PP 모드 파라미터 (임시값 - 실측 후 조정할 것). 그리퍼는 MIT 그대로 사용.
+constexpr float PP_VEL_MAX   = 2.0f;    // rad/s
+constexpr float PP_ACC       = 10.0f;   // rad/s^2 (매뉴얼 기본값)
+constexpr float PP_CURRENT_LIM = 10.0f;  // A (임시값 - 토크 리밋 대신 전류 리밋 사용)
+
+constexpr double INIT_POS_TOLERANCE = 20.0 * M_PI / 180.0;   // 시작 시 영점 허용 편차 (rad)
+bool startup_fault = false;                                   // 초기 위치 편차 초과 시 main이 비정상 종료
+
+constexpr bool is_gripper(int can_id) { return can_id == CAN_ID_LEFT_EE || can_id == CAN_ID_RIGHT_EE; }
 
 Motor_con AReuMii;
 
@@ -73,7 +83,10 @@ void* CAN_Comm_thread(void* arg) {  // TODO : 캘리브레이션을 위한 로�
 
     std::apply([](auto&... vecs) {
         (..., [](auto& vec) {
-            for (auto& motor : vec) motor.write_operation_frame(0, 0, 0);
+            for (auto& motor : vec) {
+                if (is_gripper(motor.can_id)) motor.write_operation_frame(0, 0, 0);
+                else motor.write_pp_velocity(PP_VEL_MAX);   // PP 모터: 위치를 모르므로 이동 없이 상태 프레임(피드백)만 유도. 값은 init과 동일
+            }
         }(vecs));
     }, AReuMii);
 
@@ -94,10 +107,31 @@ void* CAN_Comm_thread(void* arg) {  // TODO : 캘리브레이션을 위한 로�
         }(vecs));
     }, AReuMii);
 
-    // 그리퍼는 매 주기가 아니라 명령이 바뀐 순간에만 프레임을 날린다.
-    struct GripperCmd { double pos, vel, Kp, Kd, ffTorque; };
-    constexpr int GRIPPER_VEC_IDX[2] = {VEC_INDEX_LEFT_GRIPPER, VEC_INDEX_RIGHT_GRIPPER};
-    GripperCmd last_gripper[2] = { {NAN,NAN,NAN,NAN,NAN}, {NAN,NAN,NAN,NAN,NAN} };  // 첫 사이클은 무조건 1회 전송
+    // 초기 피드백(2π 보정 후)이 영점에서 20도 이상 벗어난 모터가 있으면 제어를 시작하지 않고 종료
+    bool pose_fault = false;
+    std::apply([&](auto&... vecs) {
+        (..., [&](auto& vec) {
+            for (auto& motor : vec) {
+                double corr = motor.Feedback_param.pos.load(std::memory_order_relaxed) + motor.pos_offset;
+                if (std::fabs(corr) > INIT_POS_TOLERANCE) {
+                    std::cerr << "[ID 0x" << std::hex << motor.can_id << std::dec << "] 초기 위치 편차 "
+                              << corr * 180.0 / M_PI << " deg > " << INIT_POS_TOLERANCE * 180.0 / M_PI << " deg\n";
+                    pose_fault = true;
+                }
+            }
+        }(vecs));
+    }, AReuMii);
+
+    if (pose_fault) {
+        running = false;
+        startup_fault = true;
+        std::apply([](auto&... vecs) {
+            (..., [](auto& vec) {
+                for (auto& motor : vec) motor.stop_motor();
+            }(vecs));
+        }, AReuMii);
+        return nullptr;
+    }
 
     RTC.reset();
     while (running) {
@@ -119,34 +153,12 @@ void* CAN_Comm_thread(void* arg) {  // TODO : 캘리브레이션을 위한 로�
         std::apply([](auto&... vecs) {
             (..., [](auto& vec) {
                 for (auto& motor : vec) {
-                    if (motor.can_id == CAN_ID_LEFT_EE || motor.can_id == CAN_ID_RIGHT_EE) continue;
-                    motor.write_updated_operation_frame();
+                    if (is_gripper(motor.can_id)) motor.write_updated_operation_frame();   // 그리퍼: MIT
+                    else motor.write_pp_position(motor.control_param.pos.load(std::memory_order_relaxed));   // 나머지: PP
                 }
             }(vecs));
         }, AReuMii);
 
-        // 그리퍼: 직전 전송값과 다를 때만 전송
-        bool gripper_sent = false;
-        for (int i = 0; i < 2; ++i) {
-            auto& g = std::get<EL05_Vec>(AReuMii)[GRIPPER_VEC_IDX[i]];
-            GripperCmd cur{
-                g.control_param.pos.load(std::memory_order_relaxed),
-                g.control_param.vel.load(std::memory_order_relaxed),
-                g.control_param.Kp.load(std::memory_order_relaxed),
-                g.control_param.Kd.load(std::memory_order_relaxed),
-                g.control_param.ffTorque.load(std::memory_order_relaxed)
-            };
-            if (cur.pos == last_gripper[i].pos && cur.vel == last_gripper[i].vel &&
-                cur.Kp  == last_gripper[i].Kp  && cur.Kd  == last_gripper[i].Kd  &&
-                cur.ffTorque == last_gripper[i].ffTorque) continue;
-
-            g.write_updated_operation_frame();
-            last_gripper[i] = cur;
-            gripper_sent = true;
-        }
-
-        // 그리퍼 프레임이 나간 만큼 주기가 밀리므로 기준 시각을 다시 잡고 다음 사이클로
-        if (gripper_sent) RTC.reset();
     }
 
     return NULL;
@@ -160,51 +172,6 @@ void* update_Control_params(void* args){
     Control_param ctrl_buf[MOTOR_NUM];
     Feedback_Param fb_buf[MOTOR_NUM];
 
-    // 왼팔 Kp
-    // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.Kp.store(10, std::memory_order_relaxed);
-    // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.Kp.store(10, std::memory_order_relaxed);
-    // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.Kp.store(10, std::memory_order_relaxed);
-    // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.Kp.store(10, std::memory_order_relaxed);
-
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.Kp.store(3, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.Kp.store(3, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.Kp.store(3, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_GRIPPER].control_param.Kp.store(3, std::memory_order_relaxed);
-
-    // // 오른팔 Kp
-    // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.Kp.store(10, std::memory_order_relaxed);
-    // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.Kp.store(10, std::memory_order_relaxed);
-    // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.Kp.store(10, std::memory_order_relaxed);
-    // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.Kp.store(10, std::memory_order_relaxed);
-
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_ROLL].control_param.Kp.store(3, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_YAW].control_param.Kp.store(3, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_PITCH].control_param.Kp.store(3, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_GRIPPER].control_param.Kp.store(3, std::memory_order_relaxed);
-
-
-    // // 왼팔 Kd
-    // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.Kd.store(4, std::memory_order_relaxed);
-    // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.Kd.store(4, std::memory_order_relaxed);
-    // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.Kd.store(4, std::memory_order_relaxed);
-    // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.Kd.store(4, std::memory_order_relaxed);
-
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.Kd.store(1, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.Kd.store(1, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.Kd.store(1, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_GRIPPER].control_param.Kd.store(1, std::memory_order_relaxed);
-
-    // // 오른팔 Kd
-    // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.Kd.store(4, std::memory_order_relaxed);
-    // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.Kd.store(4, std::memory_order_relaxed);
-    // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.Kd.store(4, std::memory_order_relaxed);
-    // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.Kd.store(4, std::memory_order_relaxed);
-
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_ROLL].control_param.Kd.store(1, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_YAW].control_param.Kd.store(1, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_PITCH].control_param.Kd.store(1, std::memory_order_relaxed);
-    // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_GRIPPER].control_param.Kd.store(1, std::memory_order_relaxed);
-
 
     ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].pos = 0.0;
     ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].pos = 0.0;
@@ -215,92 +182,48 @@ void* update_Control_params(void* args){
     while(running){
         while (!shm_ptr->try_read_ctrl(ctrl_buf));  // torn read면 재시도
 
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.pos.store(std::clamp(-ctrl_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.pos.store(std::clamp(-ctrl_buf[SHM_INDEX_LEFT_SHOULDER_YAW].pos, -2.0, 2.0), std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.pos.store(std::clamp(-ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.pos.store(std::clamp(-ctrl_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].pos, MIN_POS_LEFT_SHOULDER_PITCH, MAX_POS_LEFT_SHOULDER_PITCH), std::memory_order_relaxed);  // 라디안임.
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].pos, MIN_POS_LEFT_SHOULDER_ROLL, MAX_POS_LEFT_SHOULDER_ROLL), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.pos.store(std::clamp(-ctrl_buf[SHM_INDEX_LEFT_SHOULDER_YAW].pos, MIN_POS_LEFT_SHOULDER_YAW, MAX_POS_LEFT_SHOULDER_YAW), std::memory_order_relaxed);
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.pos.store(std::clamp(-ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].pos, MIN_POS_LEFT_ELBOW, MAX_POS_LEFT_ELBOW), std::memory_order_relaxed);
 
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.pos.store(std::clamp(-ctrl_buf[SHM_INDEX_LEFT_WRIST_ROLL].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_WRIST_YAW].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_WRIST_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_GRIPPER].control_param.pos.store(std::clamp(-ctrl_buf[SHM_INDEX_LEFT_GRIPPER].pos, -2.0, 2.0), std::memory_order_relaxed);
-
-
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].vel, std::memory_order_relaxed);  // 라디안임.
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_SHOULDER_YAW].vel,  std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].vel, std::memory_order_relaxed);
-
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_WRIST_ROLL].vel, std::memory_order_relaxed);  // 라디안임.
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_YAW].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_PITCH].vel, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_GRIPPER].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_GRIPPER].vel, std::memory_order_relaxed);
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.pos.store(std::clamp(-ctrl_buf[SHM_INDEX_LEFT_WRIST_ROLL].pos, MIN_POS_LEFT_WRIST_ROLL, MAX_POS_LEFT_WRIST_ROLL), std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_WRIST_YAW].pos, MIN_POS_LEFT_WRIST_YAW, MAX_POS_LEFT_WRIST_YAW), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_LEFT_WRIST_PITCH].pos, MIN_POS_LEFT_WRIST_PITCH, MAX_POS_LEFT_WRIST_PITCH), std::memory_order_relaxed);
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_GRIPPER].control_param.pos.store(-ctrl_buf[SHM_INDEX_LEFT_GRIPPER].pos, std::memory_order_relaxed);
 
 
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.pos.store(-std::clamp(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].pos, -2.0, 0.3), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].pos, -1.5, 1.5), std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);
+        // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].vel, std::memory_order_relaxed);  // 라디안임.
+        // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_SHOULDER_YAW].vel,  std::memory_order_relaxed);
+        // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].vel, std::memory_order_relaxed);
 
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_ROLL].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_WRIST_ROLL].pos, -2.0, 2.0), std::memory_order_relaxed);  // 라디안임.
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_YAW].control_param.pos.store(-std::clamp(ctrl_buf[SHM_INDEX_RIGHT_WRIST_YAW].pos, -2.0, 2.0), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_PITCH].control_param.pos.store(-std::clamp(ctrl_buf[SHM_INDEX_RIGHT_WRIST_PITCH].pos, -2.0, 2.0), std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_GRIPPER].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_GRIPPER].pos, -2.0, 2.0), std::memory_order_relaxed);
-
-
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].vel, std::memory_order_relaxed);  // 라디안임.
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.vel.store(-ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].vel,  std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].vel, std::memory_order_relaxed);
-
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_ROLL].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_ROLL].vel, std::memory_order_relaxed);  // 라디안임.
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_YAW].control_param.vel.store(-ctrl_buf[SHM_INDEX_RIGHT_WRIST_YAW].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_PITCH].control_param.vel.store(-ctrl_buf[SHM_INDEX_RIGHT_WRIST_PITCH].vel, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_GRIPPER].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_GRIPPER].vel, std::memory_order_relaxed);
+        // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_WRIST_ROLL].vel, std::memory_order_relaxed);  // 라디안임.
+        // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_YAW].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_PITCH].vel, std::memory_order_relaxed);
+        // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_GRIPPER].control_param.vel.store(-ctrl_buf[SHM_INDEX_LEFT_GRIPPER].vel, std::memory_order_relaxed);
 
 
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.Kp.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].Kp, std::memory_order_relaxed);
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.Kp.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].Kp, std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.Kp.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_YAW].Kp, std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.Kp.store(ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].Kp, std::memory_order_relaxed);
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].pos, MIN_POS_RIGHT_SHOULDER_PITCH, MAX_POS_RIGHT_SHOULDER_PITCH), std::memory_order_relaxed);  // 라디안임.
+        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.pos.store(-std::clamp(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].pos, MIN_POS_RIGHT_SHOULDER_ROLL, MAX_POS_RIGHT_SHOULDER_ROLL), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].pos, MIN_POS_RIGHT_SHOULDER_YAW, MAX_POS_RIGHT_SHOULDER_YAW), std::memory_order_relaxed);
+        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].pos, MIN_POS_RIGHT_ELBOW, MAX_POS_RIGHT_ELBOW), std::memory_order_relaxed);
 
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.Kp.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_ROLL].Kp, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.Kp.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_YAW].Kp, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.Kp.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_PITCH].Kp, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_GRIPPER].control_param.Kp.store(ctrl_buf[SHM_INDEX_LEFT_GRIPPER].Kp, std::memory_order_relaxed);
-
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.Kp.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].Kp, std::memory_order_relaxed);
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.Kp.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].Kp, std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.Kp.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].Kp, std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.Kp.store(ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].Kp, std::memory_order_relaxed);
-
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_ROLL].control_param.Kp.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_ROLL].Kp, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_YAW].control_param.Kp.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_YAW].Kp, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_PITCH].control_param.Kp.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_PITCH].Kp, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_GRIPPER].control_param.Kp.store(ctrl_buf[SHM_INDEX_RIGHT_GRIPPER].Kp, std::memory_order_relaxed);
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_ROLL].control_param.pos.store(std::clamp(ctrl_buf[SHM_INDEX_RIGHT_WRIST_ROLL].pos, MIN_POS_RIGHT_WRIST_ROLL, MAX_POS_RIGHT_WRIST_ROLL), std::memory_order_relaxed);  // 라디안임.
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_YAW].control_param.pos.store(-std::clamp(ctrl_buf[SHM_INDEX_RIGHT_WRIST_YAW].pos, MIN_POS_RIGHT_WRIST_YAW, MAX_POS_RIGHT_WRIST_YAW), std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_PITCH].control_param.pos.store(-std::clamp(ctrl_buf[SHM_INDEX_RIGHT_WRIST_PITCH].pos, MIN_POS_RIGHT_WRIST_PITCH, MAX_POS_RIGHT_WRIST_PITCH), std::memory_order_relaxed);
+        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_GRIPPER].control_param.pos.store(ctrl_buf[SHM_INDEX_RIGHT_GRIPPER].pos, std::memory_order_relaxed);
 
 
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].control_param.Kd.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].Kd, std::memory_order_relaxed);
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_ROLL].control_param.Kd.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_ROLL].Kd, std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_YAW].control_param.Kd.store(ctrl_buf[SHM_INDEX_LEFT_SHOULDER_YAW].Kd, std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_LEFT_ELBOW_PITCH].control_param.Kd.store(ctrl_buf[SHM_INDEX_LEFT_ELBOW_PITCH].Kd, std::memory_order_relaxed);
+        // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].vel, std::memory_order_relaxed);  // 라디안임.
+        // std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.vel.store(-ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].vel,  std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].vel,  std::memory_order_relaxed);
+        // std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].vel, std::memory_order_relaxed);
 
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_ROLL].control_param.Kd.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_ROLL].Kd, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_YAW].control_param.Kd.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_YAW].Kd, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_WRIST_PITCH].control_param.Kd.store(ctrl_buf[SHM_INDEX_LEFT_WRIST_PITCH].Kd, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_LEFT_GRIPPER].control_param.Kd.store(ctrl_buf[SHM_INDEX_LEFT_GRIPPER].Kd, std::memory_order_relaxed);
-
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_PITCH].control_param.Kd.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_PITCH].Kd, std::memory_order_relaxed);
-        std::get<RS02_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_ROLL].control_param.Kd.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_ROLL].Kd, std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_SHOULDER_YAW].control_param.Kd.store(ctrl_buf[SHM_INDEX_RIGHT_SHOULDER_YAW].Kd, std::memory_order_relaxed);
-        std::get<RS00_Vec>(AReuMii)[VEC_INDEX_RIGHT_ELBOW_PITCH].control_param.Kd.store(ctrl_buf[SHM_INDEX_RIGHT_ELBOW_PITCH].Kd, std::memory_order_relaxed);
-
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_ROLL].control_param.Kd.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_ROLL].Kd, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_YAW].control_param.Kd.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_YAW].Kd, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_PITCH].control_param.Kd.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_PITCH].Kd, std::memory_order_relaxed);
-        std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_GRIPPER].control_param.Kd.store(ctrl_buf[SHM_INDEX_RIGHT_GRIPPER].Kd, std::memory_order_relaxed);
-
-
+        // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_ROLL].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_WRIST_ROLL].vel, std::memory_order_relaxed);  // 라디안임.
+        // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_YAW].control_param.vel.store(-ctrl_buf[SHM_INDEX_RIGHT_WRIST_YAW].vel, std::memory_order_relaxed);  // 나중에 하드코딩이 아니라 상수나 매크로로 바꿀 것.
+        // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_WRIST_PITCH].control_param.vel.store(-ctrl_buf[SHM_INDEX_RIGHT_WRIST_PITCH].vel, std::memory_order_relaxed);
+        // std::get<EL05_Vec>(AReuMii)[VEC_INDEX_RIGHT_GRIPPER].control_param.vel.store(ctrl_buf[SHM_INDEX_RIGHT_GRIPPER].vel, std::memory_order_relaxed);
 
 
         fb_buf[SHM_INDEX_LEFT_SHOULDER_PITCH].pos = -std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].Feedback_param.pos.load(std::memory_order_relaxed)-std::get<RS02_Vec>(AReuMii)[VEC_INDEX_LEFT_SHOULDER_PITCH].pos_offset;
@@ -419,7 +342,10 @@ int main() {
 
     std::apply([](auto&... vecs) {
         (..., [](auto& vec) {
-            for (auto& motor : vec) motor.init_motor_MIT(10, 10);
+            for (auto& motor : vec) {
+                if (is_gripper(motor.can_id)) motor.init_motor_MIT(10, 10);
+                else motor.init_motor_PP(PP_VEL_MAX, PP_ACC, PP_CURRENT_LIM);
+            }
         }(vecs));
     }, AReuMii);
 
@@ -435,5 +361,6 @@ int main() {
     pthread_join(print_t, nullptr);
     pthread_join(shm_t , nullptr);
 
+    if (startup_fault) return -1;
     return 0;
 }

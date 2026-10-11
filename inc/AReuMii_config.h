@@ -58,39 +58,39 @@
 
 
 //lEFT ARM LIMITS
-constexpr double MAX_POS_LEFT_SHOULDER_PITCH =   1.0;
-constexpr double MIN_POS_LEFT_SHOULDER_PITCH =  -1.0;
-constexpr double MAX_POS_LEFT_SHOULDER_ROLL =    1.0;
-constexpr double MIN_POS_LEFT_SHOULDER_ROLL =   -1.0;
-constexpr double MAX_POS_LEFT_SHOULDER_YAW =     1.0;
-constexpr double MIN_POS_LEFT_SHOULDER_YAW =    -1.0;
-constexpr double MAX_POS_LEFT_ELBOW =            1.0;
-constexpr double MIN_POS_LEFT_ELBOW =           -1.0;
-constexpr double MAX_POS_LEFT_WRIST_ROLL =       1.0;
-constexpr double MIN_POS_LEFT_WRIST_ROLL =      -1.0;
-constexpr double MAX_POS_LEFT_WRIST_PITCH =      1.0;
-constexpr double MIN_POS_LEFT_WRIST_PITCH =     -1.0;
-constexpr double MAX_POS_LEFT_WRIST_YAW =        1.0;
-constexpr double MIN_POS_LEFT_WRIST_YAW =       -1.0;
-constexpr double MAX_POS_LEFT_EE =               1.0;
-constexpr double MIN_POS_LEFT_EE =              -1.0;
+constexpr double MAX_POS_LEFT_SHOULDER_PITCH = 2.0;
+constexpr double MIN_POS_LEFT_SHOULDER_PITCH = -2.0;
+constexpr double MAX_POS_LEFT_SHOULDER_ROLL = 2.0;
+constexpr double MIN_POS_LEFT_SHOULDER_ROLL = -2.0;
+constexpr double MAX_POS_LEFT_SHOULDER_YAW = 2.0;
+constexpr double MIN_POS_LEFT_SHOULDER_YAW = -2.0;
+constexpr double MAX_POS_LEFT_ELBOW = 2.0;
+constexpr double MIN_POS_LEFT_ELBOW = -2.0;
+constexpr double MAX_POS_LEFT_WRIST_ROLL = 2.0;
+constexpr double MIN_POS_LEFT_WRIST_ROLL = -2.0;
+constexpr double MAX_POS_LEFT_WRIST_PITCH = 2.0;
+constexpr double MIN_POS_LEFT_WRIST_PITCH = -2.0;
+constexpr double MAX_POS_LEFT_WRIST_YAW = 2.0;
+constexpr double MIN_POS_LEFT_WRIST_YAW = -2.0;
+constexpr double MAX_POS_LEFT_EE = 2.0;
+constexpr double MIN_POS_LEFT_EE = -2.0;
 
 //RIGHT ARM LIMITS 
-constexpr double MAX_POS_RIGHT_SHOULDER_PITCH =   1.0;
-constexpr double MIN_POS_RIGHT_SHOULDER_PITCH =  -1.0;
-constexpr double MAX_POS_RIGHT_SHOULDER_ROLL =    1.0;
-constexpr double MIN_POS_RIGHT_SHOULDER_ROLL =   -1.0;
-constexpr double MAX_POS_RIGHT_SHOULDER_YAW =     1.0;
-constexpr double MIN_POS_RIGHT_SHOULDER_YAW =    -1.0;
-constexpr double MAX_POS_RIGHT_ELBOW =            1.0;
-constexpr double MIN_POS_RIGHT_ELBOW =           -1.0;
-constexpr double MAX_POS_RIGHT_WRIST_ROLL =       1.0;
-constexpr double MIN_POS_RIGHT_WRIST_ROLL =      -1.0;
-constexpr double MAX_POS_RIGHT_WRIST_PITCH =      1.0;
-constexpr double MIN_POS_RIGHT_WRIST_PITCH =     -1.0;
-constexpr double MAX_POS_RIGHT_WRIST_YAW =        1.0;
-constexpr double MIN_POS_RIGHT_WRIST_YAW =       -1.0;
-constexpr double MAX_POS_RIGHT_EE =               1.0;
-constexpr double MIN_POS_RIGHT_EE =              -1.0;
+constexpr double MAX_POS_RIGHT_SHOULDER_PITCH = 2.0;
+constexpr double MIN_POS_RIGHT_SHOULDER_PITCH = -2.0;
+constexpr double MAX_POS_RIGHT_SHOULDER_ROLL = 0.3;
+constexpr double MIN_POS_RIGHT_SHOULDER_ROLL = -2.0;
+constexpr double MAX_POS_RIGHT_SHOULDER_YAW = 1.5;
+constexpr double MIN_POS_RIGHT_SHOULDER_YAW = -1.5;
+constexpr double MAX_POS_RIGHT_ELBOW = 2.0;
+constexpr double MIN_POS_RIGHT_ELBOW = -2.0;
+constexpr double MAX_POS_RIGHT_WRIST_ROLL = 2.0;
+constexpr double MIN_POS_RIGHT_WRIST_ROLL = -2.0;
+constexpr double MAX_POS_RIGHT_WRIST_PITCH = 2.0;
+constexpr double MIN_POS_RIGHT_WRIST_PITCH = -2.0;
+constexpr double MAX_POS_RIGHT_WRIST_YAW = 2.0;
+constexpr double MIN_POS_RIGHT_WRIST_YAW = -2.0;
+constexpr double MAX_POS_RIGHT_EE = 2.0;
+constexpr double MIN_POS_RIGHT_EE = -2.0;
 
 

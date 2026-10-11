@@ -9,4 +9,4 @@ Areum2_can
 *.swp
 
 #log files 
-.log
+*.log

@@ -34,6 +34,12 @@ constexpr uint32_t COMM_OPERATION_CONTROL = 1;
 constexpr uint16_t PARAM_VELOCITY_LIMIT = 0x7017;
 constexpr uint16_t PARAM_TORQUE_LIMIT = 0x700B;           
 constexpr uint32_t COMM_STOP   = 4;
+constexpr uint16_t PARAM_CURRENT_LIMIT = 0x7018;          // 위치/속도 모드 전류 제한 (A). PP 모드는 limit_torque 대신 이쪽으로 제한
+constexpr uint16_t PARAM_LOC_REF = 0x7016;                // PP 모드 목표 위치 (rad)
+constexpr uint16_t PARAM_VEL_MAX = 0x7024;                // PP 모드 최대 속도 (rad/s), 동작 중 변경 불가. 0으로 쓰면 비상정지
+constexpr uint16_t PARAM_ACC_SET = 0x7025;                // PP 모드 가속도 (rad/s^2), 동작 중 변경 불가
+constexpr int8_t   RUN_MODE_MIT = 0;
+constexpr int8_t   RUN_MODE_PP  = 1;
 
 enum class RobstrideMotor_type {RS00 = 0, RS01 =1 , RS02 =2 , RS03 = 3, RS04= 4, RS05 =5, RS06=6, EL05 = 7};
 
@@ -427,6 +433,48 @@ class RobstrideMotor {
         set_mode_raw(0);
         write_limit(PARAM_VELOCITY_LIMIT, vel_lim);
         write_limit(PARAM_TORQUE_LIMIT, torque_lim);
+    }
+
+
+    // --- PP (Profile Position) 모드 ---
+    // 순서: run_mode=1 -> enable -> vel_max -> acc_set -> loc_ref (매뉴얼 4.3.5)
+    // PP 모터에는 write_updated_operation_frame()(type 1) 을 보내지 말 것. 위치는 write_pp_position()으로 보낸다.
+
+    bool write_pp_velocity(float vel_max) {
+        return write_limit(PARAM_VEL_MAX, std::max(0.0f, std::min(vel_max, (float)MotorConstants<Motor_type>::VEL_SCALE)));
+    }
+
+    bool write_pp_accel(float acc) {
+        return write_limit(PARAM_ACC_SET, std::max(0.0f, acc));
+    }
+
+    bool write_pp_position(double pos) {   // pos_offset 보정 적용 (MIT 쪽과 동일한 규칙)
+        double pos_clamped = std::clamp(pos - pos_offset, -MotorConstants<Motor_type>::POS_SCALE, MotorConstants<Motor_type>::POS_SCALE);
+        return write_limit(PARAM_LOC_REF, (float)pos_clamped);   // 이름만 리밋 함수임. 프로토콜 상 같은 방식으로 패킹되서 재사용임
+    }
+
+    bool emergency_stop_pp() {              // vel_max=0 : 현재 속도/가속도 계획대로 정지
+        return write_limit(PARAM_VEL_MAX, 0.0f);
+    }
+
+    bool init_motor_PP(float vel_max, float acc, float current_lim) {
+        clear_fault();
+        usleep(1000);
+        set_mode_raw(RUN_MODE_PP);          // 매뉴얼 순서상 enable 전에 모드 설정
+        usleep(1000);
+        enable_motor();
+        usleep(1000);
+        write_limit(PARAM_CURRENT_LIMIT, current_lim);   // [A]
+        usleep(1000);
+        write_pp_velocity(vel_max);
+        usleep(1000);
+        write_pp_accel(acc);
+        return true;                        // 이후 write_pp_position()으로 목표 위치 전송
+    }
+
+    void restart_motor_PP(float vel_max, float acc, float current_lim) {
+        stop_motor();
+        init_motor_PP(vel_max, acc, current_lim);
     }
 
 

@@ -21,6 +21,11 @@ CANDUMP_PID=$!
 # 이 셸을 Ctrl+C 로 끄면 로깅도 같이 멈춘다.
 trap 'kill ${CANDUMP_PID} 2>/dev/null' INT TERM EXIT
 
+# 이전 실행에서 남은 공유메모리(key 13563267)를 제거한다. 남아 있으면 이전 목표 위치가 그대로 읽혀 PP 모터가 시작과 동시에 움직일 수 있다.
+# 없으면 에러가 나므로 무시. 새 세그먼트는 Areum2_can 이 0으로 초기화해서 만든다.
+SHM_KEY="13563267"
+ipcrm -M ${SHM_KEY} 2>/dev/null && echo "공유메모리(${SHM_KEY}) 초기화" || echo "공유메모리(${SHM_KEY}) 없음 - 새로 생성"
+
 echo "CAN 통신 프로그램을 별도 터미널에서 실행합니다."
 #./Areum2_can > /dev/null 2>&1 &
 gnome-terminal -- ./Areum2_can

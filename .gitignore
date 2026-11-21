@@ -9,4 +9,8 @@ Areum2_can
 *.swp
 
 #log files 
-.log
+*.log
+
+
+# codegen stamp (생성물 자체는 추적함)
+.gen_stamp

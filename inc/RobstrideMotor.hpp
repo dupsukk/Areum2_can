@@ -21,7 +21,6 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-#include "AReuMii_config.h"
 #include "utils.hpp"
 //#include "Sharemem.hpp"
 
@@ -198,15 +197,17 @@ class RobstrideMotor {
     Motor_Feedback_Param Feedback_param;
     double pos_offset = 0.0;
     bool calibrated = false;
+    const double pos_offset_mech;  // 기계적 오프셋 [rad]. 모터 좌표계 기준(부호 적용 후 값은 생성기가 sign*offset 으로 넘김)
 
 
-    RobstrideMotor(int can_interface,int can_id ):
-        can_interface(can_interface) ,can_id(can_id) {
+    RobstrideMotor(int can_interface,int can_id , double pos_offset_mech = 0.0):
+        can_interface(can_interface) ,can_id(can_id) , pos_offset_mech(pos_offset_mech) {
     }
 
     void calibrate(double expected = 0.0) {
         double diff = Feedback_param.pos.load(std::memory_order_relaxed) - expected;
         pos_offset = -std::round(diff / (2*M_PI)) * (2*M_PI);
+        pos_offset -= pos_offset_mech;
         calibrated = true;
     }
     

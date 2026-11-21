@@ -10,3 +10,4 @@ Areum2_can
 
 #log files 
 *.log
+.gen_stamp

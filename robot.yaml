@@ -1,0 +1,45 @@
+# 유일한 진실 원천. gen_robot.py 가 이 파일에서 main.cpp 와 {robot_name}_config.h 를 생성한다.
+#
+# 좌표계 규약 (방향 우선)
+#   - sign   : 모터 좌표계 -> 관절(shm) 좌표계 방향. 거울상 배치된 모터의 회전축을 이걸로 통일한다.
+#   - offset : 부호가 적용된 "관절 좌표계" 기계적 오프셋 [rad]. 같은 값을 적으면 같은 관절 각도가 원점.
+#              (생성기가 모터 생성자에 sign * offset 을 넘긴다. 모터는 부호를 모른다.)
+#   - min_pos / max_pos : 상위(shm) 좌표계 기준 한계 [rad]. 오프셋/부호가 적용된 뒤의 값.
+#   - mode   : MIT (pos/vel/Kp/Kd 를 매 주기 전송) | PP (Profile Position, 목표 위치만 전송).
+#   - pp_vel_max / pp_acc / pp_current_limit : PP 모터 필수. 속도 [rad/s] / 가속도 [rad/s^2] / 전류 제한 [A] (임시값 - 실측 후 조정할 것).
+#                                PP 는 토크 리밋 대신 전류 리밋을 쓴다. MIT 모터는 생략.
+#   - vel_limit / torque_limit : MIT 모터의 init_motor_MIT 에 전달되는 속도[rad/s] / 토크[Nm] 제한. PP 모터는 생략.
+#   - sign 은 pos / vel / torque 에 모두 동일하게 적용된다. offset 은 pos 에만 적용된다.
+
+robot_name: AReuMii
+
+control_period_ns: 3000000      # CAN 통신 주기. 약 333Hz
+shm_sync_period_us: 1000        # update_Control_params 루프의 usleep 값
+shm_key: 13563267               # SysV shmget key. POSIX 전환 시 shm_name 필드로 교체 예정
+
+can_interfaces: [can0, can1]
+
+init_pos_tolerance_deg: 20.0    # 시작 시 캘리브레이션 직후 영점에서 이만큼 넘게 벗어난 모터가 있으면 제어를 시작하지 않고 종료
+
+# 모터 타입: RS00 | RS01 | RS02 | RS03 | RS04 | RS05 | RS06 | EL05
+# shm 은 0..N-1 의 순열이어야 한다. (타입별 deque 안의 순번은 shm 순서로 생성기가 자동 계산)
+actuators:
+  # ---- 왼팔 (can0) ----
+  - { name: LEFT_SHOULDER_PITCH,  type: RS02, can_if: can0, can_id: 0x01, shm: 0,  sign: -1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: LEFT_SHOULDER_ROLL,   type: RS02, can_if: can0, can_id: 0x02, shm: 1,  sign:  1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: LEFT_SHOULDER_YAW,    type: RS00, can_if: can0, can_id: 0x03, shm: 2,  sign: -1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: LEFT_ELBOW_PITCH,     type: RS00, can_if: can0, can_id: 0x04, shm: 3,  sign: -1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: LEFT_WRIST_ROLL,      type: EL05, can_if: can0, can_id: 0x05, shm: 4,  sign: -1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: LEFT_WRIST_YAW,       type: EL05, can_if: can0, can_id: 0x06, shm: 5,  sign:  1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: LEFT_WRIST_PITCH,     type: EL05, can_if: can0, can_id: 0x07, shm: 6,  sign:  1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: LEFT_GRIPPER,         type: EL05, can_if: can0, can_id: 0x08, shm: 7,  sign: -1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, vel_limit: 10.0, torque_limit: 10.0, mode: MIT }
+
+  # ---- 오른팔 (can1) ----
+  - { name: RIGHT_SHOULDER_PITCH, type: RS02, can_if: can1, can_id: 0x11, shm: 8,  sign:  1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: RIGHT_SHOULDER_ROLL,  type: RS02, can_if: can1, can_id: 0x12, shm: 9,  sign: -1, offset: 0.0, min_pos: -2.0, max_pos: 0.3, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: RIGHT_SHOULDER_YAW,   type: RS00, can_if: can1, can_id: 0x13, shm: 10, sign:  1, offset: 0.0, min_pos: -1.5, max_pos: 1.5, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: RIGHT_ELBOW_PITCH,    type: RS00, can_if: can1, can_id: 0x14, shm: 11, sign:  1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: RIGHT_WRIST_ROLL,     type: EL05, can_if: can1, can_id: 0x15, shm: 12, sign:  1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: RIGHT_WRIST_YAW,      type: EL05, can_if: can1, can_id: 0x16, shm: 13, sign: -1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: RIGHT_WRIST_PITCH,    type: EL05, can_if: can1, can_id: 0x17, shm: 14, sign: -1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, mode: PP, pp_vel_max: 2.0, pp_acc: 10.0, pp_current_limit: 10.0 }
+  - { name: RIGHT_GRIPPER,        type: EL05, can_if: can1, can_id: 0x18, shm: 15, sign:  1, offset: 0.0, min_pos: -2.0, max_pos: 2.0, vel_limit: 10.0, torque_limit: 10.0, mode: MIT }
